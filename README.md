@@ -1,2 +1,0 @@
-# gtgonza.github.io
-website
