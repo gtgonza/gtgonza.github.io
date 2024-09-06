@@ -112,7 +112,7 @@
             position: relative;
             width: 100%;
             max-width: 800px;
-            height: 400px;
+            height: auto; /* Ajuste de altura automática */
             overflow: hidden;
             margin-bottom: 1rem;
         }
@@ -120,14 +120,13 @@
         .slides {
             display: flex;
             width: 100%;
-            height: 100%;
             transition: transform 0.5s ease-in-out;
         }
 
         .slides img {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            height: auto; /* Mantiene las proporciones de la imagen */
+            object-fit: cover; /* Asegura que la imagen cubra todo el contenedor */
         }
 
         /* Text overlay on the slider */
