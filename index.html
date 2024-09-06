@@ -17,7 +17,7 @@
         /* Use Helvetica font, fallback to Arial or sans-serif if unavailable */
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #f5f5f5;
+            background-color: #ffffff;
             color: #333;
             margin: 0;
             padding: 0;
@@ -36,8 +36,6 @@
             text-align: center;
             max-width: 960px;
             padding: 2rem;
-            background-color: #ffffff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
@@ -59,6 +57,7 @@
             line-height: 1.6;
         }
 
+        /* Navigation Links */
         .links {
             display: flex;
             justify-content: center;
@@ -66,18 +65,26 @@
             margin-top: 2rem;
         }
 
+        /* Change link colors */
         .links a {
             text-decoration: none;
-            color: #0066cc;
+            color: #e74c3c; /* Customize this color */
             font-weight: bold;
             font-size: 1.1rem;
         }
 
         .links a:hover {
+            color: #3498db; /* Customize hover color */
             text-decoration: underline;
         }
 
-        /* Minimal footer with time display */
+        /* Time display placed below the image */
+        .time-display {
+            margin-top: 1.5rem;
+            font-size: 1rem;
+            color: #333;
+        }
+
         .footer {
             margin-top: 2rem;
             font-size: 0.9rem;
@@ -92,8 +99,16 @@
 
         <img src="https://i.imgur.com/lOMdABx.jpg" alt="Gonzalo Gonzalez Melo">
 
+        <!-- Time Display moved below the image -->
+        <div class="time-display">
+            <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
+                Time in Santiago, Chile
+            </a>
+            <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
+        </div>
+
         <p>
-            Welcome to the personal page of Gonzalo Gonzalez Melo. Here you can find my resume, research projects, and ways to get in touch.
+            Welcome to the personal page of Gonzalo Gonzalez Melo. Here you can find my resume, gallery, and ways to get in touch.
         </p>
 
         <!-- Navigation Links -->
@@ -103,12 +118,9 @@
             <a href="http://gtgonza.github.io/contact.html">Contact</a>
         </div>
 
-        <!-- Time Display -->
+        <!-- Footer or extra space (if needed) -->
         <div class="footer">
-            <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
-                Time in Santiago, Chile
-            </a>
-            <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
+            <!-- Placeholder for any additional info -->
         </div>
     </div>
 </body>
