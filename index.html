@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +26,7 @@
             min-height: 100vh;
         }
 
-        /* Container principal que lo divide todo en la mitad verticalmente */
+        /* Main container that divides everything in half vertically */
         .container {
             display: flex;
             flex-direction: column;
@@ -36,13 +36,13 @@
             height: 100vh;
         }
 
-        /* Parte superior dividida en dos columnas */
+        /* Top section divided into two columns */
         .top {
             display: flex;
             flex: 1;
         }
 
-        /* Izquierda: Nombre y descripción */
+        /* Left: Name and description */
         .top-left {
             display: flex;
             flex-direction: column;
@@ -50,7 +50,7 @@
             align-items: flex-start;
             padding: 2rem;
             width: 50%;
-            background-color: #f5f5f5; /* Color de fondo claro */
+            background-color: #f5f5f5; /* Light background color */
         }
 
         h1 {
@@ -66,7 +66,7 @@
             line-height: 1.6;
         }
 
-        /* Derecha: Links de interés */
+        /* Right: Links */
         .top-right {
             display: flex;
             flex-direction: column;
@@ -83,19 +83,19 @@
             gap: 1rem;
         }
 
+        /* Links in black */
         .links a {
             text-decoration: none;
-            color: #e74c3c; /* Color de los enlaces */
+            color: #000000; /* Black color for links */
             font-weight: bold;
             font-size: 1.2rem;
         }
 
         .links a:hover {
-            color: #3498db; /* Color hover */
             text-decoration: underline;
         }
 
-        /* Parte inferior con la imagen y el tiempo */
+        /* Bottom section with image and time */
         .bottom {
             display: flex;
             flex-direction: column;
@@ -122,31 +122,31 @@
 
 <body>
     <div class="container">
-        <!-- Parte superior: dividida en dos columnas -->
+        <!-- Top section: divided into two columns -->
         <div class="top">
-            <!-- Columna izquierda: Nombre y descripción -->
+            <!-- Left column: Name and description -->
             <div class="top-left">
                 <h1>Gonzalo Gonzalez Melo</h1>
                 <p>
-                    Bienvenido a la página personal de Gonzalo Gonzalez Melo. Aquí puedes encontrar mi currículum, galería y formas de contactarme.
+                    Welcome to the personal page of Gonzalo Gonzalez Melo. Here you can find my resume, gallery, and ways to get in touch.
                 </p>
             </div>
-            <!-- Columna derecha: Links de interés -->
+            <!-- Right column: Links -->
             <div class="top-right">
                 <div class="links">
-                    <a href="http://gtgonza.github.io/gallery.html">Galería</a>
-                    <a href="https://www.dropbox.com/s/dm2ecaz2s5vj1if/CV_Gonza.pdf?dl=0">Currículum</a>
-                    <a href="http://gtgonza.github.io/contact.html">Contacto</a>
+                    <a href="http://gtgonza.github.io/gallery.html">Gallery</a>
+                    <a href="https://www.dropbox.com/s/dm2ecaz2s5vj1if/CV_Gonza.pdf?dl=0">Resume</a>
+                    <a href="http://gtgonza.github.io/contact.html">Contact</a>
                 </div>
             </div>
         </div>
 
-        <!-- Parte inferior: Imagen y tiempo -->
+        <!-- Bottom section: Image and time -->
         <div class="bottom">
             <img src="https://i.imgur.com/lOMdABx.jpg" alt="Gonzalo Gonzalez Melo">
             <div class="time-display">
-                <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Hora actual en Santiago" target="_blank" rel="nofollow">
-                    Tiempo en Santiago, Chile
+                <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
+                    Time in Santiago, Chile
                 </a>
                 <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
             </div>
