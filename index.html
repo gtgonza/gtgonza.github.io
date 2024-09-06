@@ -50,7 +50,7 @@
             align-items: flex-start;
             padding: 2rem;
             width: 50%;
-            background-color: #f5f5f5; /* Light background color */
+            background-color: #f5f5f5;
         }
 
         h1 {
@@ -86,7 +86,7 @@
         /* Links in black */
         .links a {
             text-decoration: none;
-            color: #000000; /* Black color for links */
+            color: #000000;
             font-weight: bold;
             font-size: 1.2rem;
         }
@@ -95,7 +95,7 @@
             text-decoration: underline;
         }
 
-        /* Bottom section with image and time */
+        /* Bottom section with image slider and time */
         .bottom {
             display: flex;
             flex-direction: column;
@@ -104,19 +104,49 @@
             padding: 2rem;
             background-color: #ffffff;
             flex: 1;
+            position: relative;
         }
 
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
+        /* Slider container */
+        .slider {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            overflow: hidden;
             margin-bottom: 1rem;
+        }
+
+        .slides {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .slides img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Text overlay on the slider */
+        .slider-text {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1rem;
         }
 
         .time-display {
             font-size: 1rem;
             color: #333;
         }
+
     </style>
 </head>
 
@@ -128,22 +158,31 @@
             <div class="top-left">
                 <h1>Gonzalo Gonzalez Melo</h1>
                 <p>
-                    Welcome to the personal page of Gonzalo Gonzalez Melo. Here you can find my resume, gallery, and ways to get in touch.
+                    Welcome to the personal page of Gonzalo Gonzalez Melo. Here you can find my resume and ways to get in touch.
                 </p>
             </div>
             <!-- Right column: Links -->
             <div class="top-right">
                 <div class="links">
-                    <a href="http://gtgonza.github.io/gallery.html">Gallery</a>
                     <a href="https://www.dropbox.com/s/dm2ecaz2s5vj1if/CV_Gonza.pdf?dl=0">Resume</a>
                     <a href="http://gtgonza.github.io/contact.html">Contact</a>
                 </div>
             </div>
         </div>
 
-        <!-- Bottom section: Image and time -->
+        <!-- Bottom section: Image slider and time -->
         <div class="bottom">
-            <img src="https://i.imgur.com/lOMdABx.jpg" alt="Gonzalo Gonzalez Melo">
+            <!-- Slider for images -->
+            <div class="slider">
+                <div class="slides">
+                    <img src="https://i.imgur.com/lOMdABx.jpg" alt="Image 1">
+                    <img src="https://i.imgur.com/3PjQFBU.jpg" alt="Image 2">
+                    <img src="https://i.imgur.com/XH2N0bB.jpg" alt="Image 3">
+                </div>
+                <div class="slider-text">Analog photography is my hobby</div>
+            </div>
+
+            <!-- Time display -->
             <div class="time-display">
                 <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
                     Time in Santiago, Chile
@@ -152,5 +191,18 @@
             </div>
         </div>
     </div>
+
+    <script>
+        const slides = document.querySelector('.slides');
+        const totalSlides = slides.children.length;
+        let index = 0;
+
+        function showNextSlide() {
+            index = (index + 1) % totalSlides;
+            slides.style.transform = `translateX(-${index * 100}%)`;
+        }
+
+        setInterval(showNextSlide, 3000); // Change image every 3 seconds
+    </script>
 </body>
 </html>
