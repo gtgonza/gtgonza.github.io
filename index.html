@@ -111,7 +111,7 @@
         .slider {
             position: relative;
             width: 100%;
-            max-width: 1600px;
+            max-width: 1200px; /* Adjusted to fit 1 image at a time */
             height: 400px; /* Fijamos una altura constante */
             overflow: hidden;
             margin-bottom: 1rem;
@@ -120,7 +120,6 @@
         .slides {
             display: flex;
             width: 100%;
-            height: 100%;
             transition: transform 0.5s ease-in-out;
         }
 
@@ -203,22 +202,32 @@
         const slides = document.querySelector('.slides');
         const totalSlides = slides.children.length;
         let index = 0;
+        let slideWidth = document.querySelector('.slider').offsetWidth; // Get the width of the slider
 
         function showNextSlide() {
             if (index < totalSlides - 1) {
                 index++;
                 slides.style.transition = 'transform 0.5s ease-in-out';
             } else {
-                // Pause at the last slide for 3 seconds
+                // Pause at the last slide for 3 seconds and then go back to the first slide
                 setTimeout(() => {
                     index = 0;
                     slides.style.transition = 'none'; // Disable transition for instant return
+                    slides.style.transform = `translateX(-${index * slideWidth}px)`;
+                    setTimeout(() => {
+                        slides.style.transition = 'transform 0.5s ease-in-out'; // Re-enable transition
+                    }, 20); // Add a tiny delay before restoring the transition
                 }, 3000); // Wait for 3 seconds at the last slide
             }
-            slides.style.transform = `translateX(-${index * 100}%)`;
+            slides.style.transform = `translateX(-${index * slideWidth}px)`;
         }
 
         setInterval(showNextSlide, 3000); // Change image every 3 seconds
+
+        // Ensure the slider resizes correctly if the window size changes
+        window.addEventListener('resize', () => {
+            slideWidth = document.querySelector('.slider').offsetWidth;
+        });
     </script>
 </body>
 </html>
