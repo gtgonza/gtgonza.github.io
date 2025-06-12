@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matriz Interactiva - 111 Sectores Económicos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.2rem;
+            color: #076D55;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .credit {
+            font-size: 0.95rem;
+            color: #076D55;
+            font-weight: 500;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .matrix-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .sectors-matrix {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 3px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .sector {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #2d3748;
+            border: 1px solid rgba(0,0,0,0.06);
+            min-height: 35px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .sector:hover {
+            transform: scale(1.8);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        /* Paleta estética moderna */
+        .sector { 
+            background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%);
+        }
+        
+        /* Sectores superiores - Verde menta suave */
+        .sector.scc-superior { 
+            background: linear-gradient(135deg, #e8f5e8 0%, #d1f2d1 100%);
+            color: #2d5a2d;
+            border: 1px solid rgba(45, 90, 45, 0.1);
+        }
+
+        .sector.scc-superior:hover {
+            box-shadow: 0 10px 25px rgba(45, 90, 45, 0.2);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip h4 {
+            margin-bottom: 5px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .tooltip p {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .tooltip .data-row {
+            margin: 3px 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .tooltip .scc-data {
+            margin: 8px 0 5px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffc107;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 8px;
+        }
+
+        .tooltip .code {
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #076D55, #0a8a6b);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 10px 25px rgba(25,118,210,0.3);
+        }
+
+        .insight-box h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .insight-box p {
+            font-size: 1rem;
+            opacity: 0.95;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 1200px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(10, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            
+            .sector:hover {
+                transform: scale(1.5);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Matriz Insumo-Producto Chile</h1>
+            <p class="subtitle">111 Sectores Económicos Interactivos - Pasa el mouse sobre cada sector</p>
+            <p class="explanation">
+                Esta matriz representa los 111 sectores económicos de Chile según el Banco Central. 
+                Cada cuadrado muestra un sector con su valor agregado y participación en el PIB 2022. 
+                Los colores indican: <strong style="color: #666;">Gris</strong> = sectores con mayor participación que SCC, 
+                <strong style="color: #2d5a2d;">Verde</strong> = sectores donde SCC supera al sector completo.
+            </p>
+            <p class="credit">Hecho por Quiroz & Asociados para Coca-Cola Chile</p>
+        </div>
+
+        <div class="matrix-container">
+            <div class="sectors-matrix" id="sectorsMatrix">
+                <!-- Los sectores se generan con JavaScript -->
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">111</div>
+                <div class="stat-label">Sectores Económicos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">2022</div>
+                <div class="stat-label">Año Base</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">BCCh</div>
+                <div class="stat-label">Banco Central Chile</div>
+            </div>
+        </div>
+
+        <div class="insight-box">
+            <h3>🎯 Insight Clave</h3>
+            <p>La participación del SCC (0,25% del PIB) es mayor que en <strong>43/111 sectores</strong> de la MIP 2022</p>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <h4 id="tooltipTitle"></h4>
+        <div class="data-row" id="tooltipValorAgregado"></div>
+        <div class="data-row" id="tooltipPibPercent"></div>
+        <div class="scc-data" id="tooltipScc" style="display: none;"></div>
+        <div class="code" id="tooltipCode"></div>
+    </div>
+
+    <script>
+        const sectors = [
+            { name: "Cultivos anuales (cereales y otros) y forrajeras", code: "01", valorAgregado: "499", pibPercent: "0,21%", mayorSCC: 1 },
+            { name: "Cultivo de hortalizas y productos de viveros", code: "02", valorAgregado: "562", pibPercent: "0,24%", mayorSCC: 1 },
+            { name: "Cultivo de uva", code: "03", valorAgregado: "271", pibPercent: "0,11%", mayorSCC: 1 },
+            { name: "Cultivo de otras frutas", code: "04", valorAgregado: "2.130", pibPercent: "0,90%", mayorSCC: 0 },
+            { name: "Cría de ganado bovino", code: "05", valorAgregado: "684", pibPercent: "0,29%", mayorSCC: 0 },
+            { name: "Cría de cerdos", code: "06", valorAgregado: "112", pibPercent: "0,05%", mayorSCC: 1 },
+            { name: "Cría de aves de corral", code: "07", valorAgregado: "489", pibPercent: "0,21%", mayorSCC: 1 },
+            { name: "Cría de otros animales", code: "08", valorAgregado: "48", pibPercent: "0,02%", mayorSCC: 1 },
+            { name: "Actividades de apoyo a la agricultura y ganadería", code: "09", valorAgregado: "1.145", pibPercent: "0,49%", mayorSCC: 0 },
+            { name: "Silvicultura y extracción de madera", code: "10", valorAgregado: "988", pibPercent: "0,42%", mayorSCC: 0 },
+            { name: "Acuicultura", code: "11", valorAgregado: "1.020", pibPercent: "0,43%", mayorSCC: 0 },
+            { name: "Pesca extractiva", code: "12", valorAgregado: "559", pibPercent: "0,24%", mayorSCC: 1 },
+            { name: "Extracción de carbón", code: "13", valorAgregado: "1", pibPercent: "0,00%", mayorSCC: 1 },
+            { name: "Extracción de petróleo y gas natural", code: "14", valorAgregado: "157", pibPercent: "0,07%", mayorSCC: 1 },
+            { name: "Minería del cobre", code: "15", valorAgregado: "25.428", pibPercent: "10,78%", mayorSCC: 0 },
+            { name: "Minería del hierro", code: "16", valorAgregado: "916", pibPercent: "0,39%", mayorSCC: 0 },
+            { name: "Minería de otros metalíferos no ferrosos", code: "17", valorAgregado: "475", pibPercent: "0,20%", mayorSCC: 1 },
+            { name: "Explotación de otras minas y servicios de apoyo a la minería", code: "18", valorAgregado: "8.199", pibPercent: "3,48%", mayorSCC: 0 },
+            { name: "Elaboración y conservación de carne", code: "19", valorAgregado: "661", pibPercent: "0,28%", mayorSCC: 0 },
+            { name: "Elaboración de harina y aceite de pescado", code: "20", valorAgregado: "471", pibPercent: "0,20%", mayorSCC: 1 },
+            { name: "Elaboración y conservación de pescados y mariscos", code: "21", valorAgregado: "1.467", pibPercent: "0,62%", mayorSCC: 0 },
+            { name: "Elaboración y conservación de vegetales", code: "22", valorAgregado: "947", pibPercent: "0,40%", mayorSCC: 0 },
+            { name: "Elaboración de aceites", code: "23", valorAgregado: "109", pibPercent: "0,05%", mayorSCC: 1 },
+            { name: "Elaboración de productos lácteos", code: "24", valorAgregado: "498", pibPercent: "0,21%", mayorSCC: 1 },
+            { name: "Elaboración de productos de molinería", code: "25", valorAgregado: "338", pibPercent: "0,14%", mayorSCC: 1 },
+            { name: "Elaboración de alimentos para animales", code: "26", valorAgregado: "1.272", pibPercent: "0,54%", mayorSCC: 0 },
+            { name: "Elaboración de productos de panadería", code: "27", valorAgregado: "884", pibPercent: "0,37%", mayorSCC: 0 },
+            { name: "Elaboración de fideos y pastas", code: "28", valorAgregado: "108", pibPercent: "0,05%", mayorSCC: 1 },
+            { name: "Elaboración de otros productos alimenticios", code: "29", valorAgregado: "573", pibPercent: "0,24%", mayorSCC: 1 },
+            { name: "Elaboración de piscos y licores", code: "30", valorAgregado: "21", pibPercent: "0,01%", mayorSCC: 1 },
+            { name: "Elaboración de vinos", code: "31", valorAgregado: "977", pibPercent: "0,41%", mayorSCC: 0 },
+            { name: "Elaboración de cervezas", code: "32", valorAgregado: "143", pibPercent: "0,06%", mayorSCC: 1 },
+            { name: "Elaboración de bebidas no alcohólicas", code: "33", valorAgregado: "684", pibPercent: "0,29%", mayorSCC: 0 },
+            { name: "Elaboración de productos de tabaco", code: "34", valorAgregado: "24", pibPercent: "0,01%", mayorSCC: 1 },
+            { name: "Fabricación de productos textiles", code: "35", valorAgregado: "95", pibPercent: "0,04%", mayorSCC: 1 },
+            { name: "Fabricación de prendas de vestir", code: "36", valorAgregado: "47", pibPercent: "0,02%", mayorSCC: 1 },
+            { name: "Elaboración de cuero y sus productos", code: "37", valorAgregado: "16", pibPercent: "0,01%", mayorSCC: 1 },
+            { name: "Fabricación de calzado", code: "38", valorAgregado: "25", pibPercent: "0,01%", mayorSCC: 1 },
+            { name: "Aserrado y acepilladura de maderas", code: "39", valorAgregado: "639", pibPercent: "0,27%", mayorSCC: 0 },
+            { name: "Fabricación de productos de madera", code: "40", valorAgregado: "1.025", pibPercent: "0,43%", mayorSCC: 0 },
+            { name: "Fabricación de celulosa", code: "41", valorAgregado: "1.091", pibPercent: "0,46%", mayorSCC: 0 },
+            { name: "Fabricación de envases de papel y cartón", code: "42", valorAgregado: "316", pibPercent: "0,13%", mayorSCC: 1 },
+            { name: "Fabricación de otros artículos de papel y cartón", code: "43", valorAgregado: "120", pibPercent: "0,05%", mayorSCC: 1 },
+            { name: "Imprentas", code: "44", valorAgregado: "354", pibPercent: "0,15%", mayorSCC: 1 },
+            { name: "Elaboración de combustibles", code: "45", valorAgregado: "1.612", pibPercent: "0,68%", mayorSCC: 0 },
+            { name: "Fabricación de sustancias químicas básicas", code: "46", valorAgregado: "2.295", pibPercent: "0,97%", mayorSCC: 0 },
+            { name: "Fabricación de pinturas y barnices", code: "47", valorAgregado: "92", pibPercent: "0,04%", mayorSCC: 1 },
+            { name: "Fabricación de productos farmacéuticos", code: "48", valorAgregado: "760", pibPercent: "0,32%", mayorSCC: 0 },
+            { name: "Fabricación de productos de aseo y cosméticos", code: "49", valorAgregado: "60", pibPercent: "0,03%", mayorSCC: 1 },
+            { name: "Fabricación de otros productos químicos", code: "50", valorAgregado: "81", pibPercent: "0,03%", mayorSCC: 1 },
+            { name: "Fabricación de productos de caucho", code: "51", valorAgregado: "147", pibPercent: "0,06%", mayorSCC: 1 },
+            { name: "Fabricación de productos de plástico", code: "52", valorAgregado: "709", pibPercent: "0,30%", mayorSCC: 0 },
+            { name: "Fabricación de vidrio y productos de vidrio", code: "53", valorAgregado: "133", pibPercent: "0,06%", mayorSCC: 1 },
+            { name: "Fabricación de cemento, cal y yeso", code: "54", valorAgregado: "169", pibPercent: "0,07%", mayorSCC: 1 },
+            { name: "Fabricación de hormigón y otros productos minerales no metálicos", code: "55", valorAgregado: "519", pibPercent: "0,22%", mayorSCC: 1 },
+            { name: "Industrias básicas de hierro y acero", code: "56", valorAgregado: "499", pibPercent: "0,21%", mayorSCC: 1 },
+            { name: "Industrias básicas de metales no ferrosos", code: "57", valorAgregado: "136", pibPercent: "0,06%", mayorSCC: 1 },
+            { name: "Fabricación de productos metálicos", code: "58", valorAgregado: "1.735", pibPercent: "0,74%", mayorSCC: 0 },
+            { name: "Fabricación de maquinaria y equipo de uso industrial y doméstico", code: "59", valorAgregado: "768", pibPercent: "0,33%", mayorSCC: 0 },
+            { name: "Fabricación de maquinaria y equipo eléctrico y electrónico", code: "60", valorAgregado: "476", pibPercent: "0,20%", mayorSCC: 1 },
+            { name: "Fabricación de equipo de transporte", code: "61", valorAgregado: "225", pibPercent: "0,10%", mayorSCC: 1 },
+            { name: "Fabricación de muebles", code: "62", valorAgregado: "173", pibPercent: "0,07%", mayorSCC: 1 },
+            { name: "Reparación de maquinaria y equipo y otras industrias manufactureras", code: "63", valorAgregado: "1.433", pibPercent: "0,61%", mayorSCC: 0 },
+            { name: "Generación de electricidad", code: "64", valorAgregado: "1.518", pibPercent: "0,64%", mayorSCC: 0 },
+            { name: "Transmisión de electricidad", code: "65", valorAgregado: "928", pibPercent: "0,39%", mayorSCC: 0 },
+            { name: "Distribución de electricidad", code: "66", valorAgregado: "891", pibPercent: "0,38%", mayorSCC: 0 },
+            { name: "Suministro de gas y vapor", code: "67", valorAgregado: "716", pibPercent: "0,30%", mayorSCC: 0 },
+            { name: "Suministro de agua", code: "68", valorAgregado: "1.307", pibPercent: "0,55%", mayorSCC: 0 },
+            { name: "Gestión de desechos y reciclaje", code: "69", valorAgregado: "748", pibPercent: "0,32%", mayorSCC: 0 },
+            { name: "Construcción de edificios residenciales", code: "70", valorAgregado: "3.177", pibPercent: "1,35%", mayorSCC: 0 },
+            { name: "Construcción de edificios no residenciales", code: "71", valorAgregado: "1.118", pibPercent: "0,47%", mayorSCC: 0 },
+            { name: "Construcción de obras de ingeniería civil", code: "72", valorAgregado: "5.202", pibPercent: "2,21%", mayorSCC: 0 },
+            { name: "Actividades especializadas de construcción", code: "73", valorAgregado: "5.931", pibPercent: "2,52%", mayorSCC: 0 },
+            { name: "Comercio automotriz", code: "74", valorAgregado: "3.169", pibPercent: "1,34%", mayorSCC: 0 },
+            { name: "Comercio mayorista", code: "75", valorAgregado: "10.958", pibPercent: "4,65%", mayorSCC: 0 },
+            { name: "Comercio minorista", code: "76", valorAgregado: "9.873", pibPercent: "4,19%", mayorSCC: 0 },
+            { name: "Hoteles", code: "77", valorAgregado: "794", pibPercent: "0,34%", mayorSCC: 0 },
+            { name: "Restaurantes", code: "78", valorAgregado: "3.691", pibPercent: "1,57%", mayorSCC: 0 },
+            { name: "Transporte ferroviario", code: "79", valorAgregado: "107", pibPercent: "0,05%", mayorSCC: 1 },
+            { name: "Otros transportes terrestres de pasajeros", code: "80", valorAgregado: "1.275", pibPercent: "0,54%", mayorSCC: 0 },
+            { name: "Transporte de carga por carretera", code: "81", valorAgregado: "3.852", pibPercent: "1,63%", mayorSCC: 0 },
+            { name: "Transporte por tuberías (gasoductos y oleoductos)", code: "82", valorAgregado: "137", pibPercent: "0,06%", mayorSCC: 1 },
+            { name: "Transporte marítimo", code: "83", valorAgregado: "455", pibPercent: "0,19%", mayorSCC: 1 },
+            { name: "Transporte aéreo", code: "84", valorAgregado: "822", pibPercent: "0,35%", mayorSCC: 0 },
+            { name: "Actividades de almacenamiento y depósito", code: "85", valorAgregado: "936", pibPercent: "0,40%", mayorSCC: 0 },
+            { name: "Actividades de apoyo al transporte terrestre", code: "86", valorAgregado: "1.699", pibPercent: "0,72%", mayorSCC: 0 },
+            { name: "Otras actividades de apoyo al transporte", code: "87", valorAgregado: "2.762", pibPercent: "1,17%", mayorSCC: 0 },
+            { name: "Correo y servicios de mensajería", code: "88", valorAgregado: "437", pibPercent: "0,19%", mayorSCC: 1 },
+            { name: "Telefonía móvil", code: "89", valorAgregado: "507", pibPercent: "0,22%", mayorSCC: 1 },
+            { name: "Telefonía fija y larga distancia", code: "90", valorAgregado: "617", pibPercent: "0,26%", mayorSCC: 0 },
+            { name: "Otras actividades de telecomunicaciones", code: "91", valorAgregado: "919", pibPercent: "0,39%", mayorSCC: 0 },
+            { name: "Actividades de servicios informáticos e información", code: "92", valorAgregado: "4.130", pibPercent: "1,75%", mayorSCC: 0 },
+            { name: "Otras actividades de edición, producción y difusión", code: "93", valorAgregado: "673", pibPercent: "0,29%", mayorSCC: 0 },
+            { name: "Intermediación financiera", code: "94", valorAgregado: "5.001", pibPercent: "2,12%", mayorSCC: 0 },
+            { name: "Actividades de seguros y reaseguros", code: "95", valorAgregado: "834", pibPercent: "0,35%", mayorSCC: 0 },
+            { name: "Auxiliares financieros", code: "96", valorAgregado: "2.844", pibPercent: "1,21%", mayorSCC: 0 },
+            { name: "Actividades inmobiliarias", code: "97", valorAgregado: "5.212", pibPercent: "2,21%", mayorSCC: 0 },
+            { name: "Servicios de vivienda", code: "98", valorAgregado: "15.539", pibPercent: "6,59%", mayorSCC: 0 },
+            { name: "Actividades de servicios jurídicos y contables", code: "99", valorAgregado: "2.834", pibPercent: "1,20%", mayorSCC: 0 },
+            { name: "Actividades de arquitectura e ingeniería", code: "100", valorAgregado: "5.978", pibPercent: "2,53%", mayorSCC: 0 },
+            { name: "Otras actividades profesionales, científicas y técnicas", code: "101", valorAgregado: "6.379", pibPercent: "2,70%", mayorSCC: 0 },
+            { name: "Actividades de alquiler y arrendamiento", code: "102", valorAgregado: "2.525", pibPercent: "1,07%", mayorSCC: 0 },
+            { name: "Actividades administrativas y de apoyo", code: "103", valorAgregado: "7.357", pibPercent: "3,12%", mayorSCC: 0 },
+            { name: "Administración pública", code: "104", valorAgregado: "11.638", pibPercent: "4,94%", mayorSCC: 0 },
+            { name: "Educación pública", code: "105", valorAgregado: "7.819", pibPercent: "3,32%", mayorSCC: 0 },
+            { name: "Educación privada", code: "106", valorAgregado: "4.961", pibPercent: "2,10%", mayorSCC: 0 },
+            { name: "Salud pública", code: "107", valorAgregado: "7.474", pibPercent: "3,17%", mayorSCC: 0 },
+            { name: "Salud privada y asistencia social", code: "108", valorAgregado: "7.213", pibPercent: "3,06%", mayorSCC: 0 },
+            { name: "Actividades asociaciones", code: "109", valorAgregado: "838", pibPercent: "0,36%", mayorSCC: 0 },
+            { name: "Actividades artísticas, entretenimiento y recreación", code: "110", valorAgregado: "1.197", pibPercent: "0,51%", mayorSCC: 0 },
+            { name: "Otras actividades de servicios personales", code: "111", valorAgregado: "2.207", pibPercent: "0,94%", mayorSCC: 0 }
+        ];
+
+        const matrix = document.getElementById('sectorsMatrix');
+        const tooltip = document.getElementById('tooltip');
+        const tooltipTitle = document.getElementById('tooltipTitle');
+        const tooltipValorAgregado = document.getElementById('tooltipValorAgregado');
+        const tooltipPibPercent = document.getElementById('tooltipPibPercent');
+        const tooltipScc = document.getElementById('tooltipScc');
+        const tooltipCode = document.getElementById('tooltipCode');
+
+        // Crear la matriz
+        sectors.forEach((sector, index) => {
+            const sectorElement = document.createElement('div');
+            sectorElement.className = 'sector';
+            
+            // Usar la variable indicadora mayorSCC para determinar el color
+            if (sector.mayorSCC === 1) {
+                sectorElement.classList.add('scc-superior');
+            }
+            
+            sectorElement.textContent = (index + 1).toString();
+            sectorElement.setAttribute('data-sector', JSON.stringify(sector));
+            
+            sectorElement.addEventListener('mouseenter', (e) => {
+                tooltipTitle.textContent = sector.name;
+                tooltipValorAgregado.textContent = `Valor Agregado: ${sector.valorAgregado} miles de millones de pesos 2022`;
+                tooltipPibPercent.textContent = `Participación PIB 2022: ${sector.pibPercent}`;
+                tooltipCode.textContent = `Código: ${sector.code}`;
+                
+                // Mostrar información SCC en TODOS los sectores
+                tooltipScc.textContent = 'Participación SCC en PIB 2022: 0,25%';
+                tooltipScc.style.display = 'block';
+                
+                tooltip.classList.add('show');
+                
+                // Posicionar tooltip considerando scroll
+                updateTooltipPosition(e);
+            });
+            
+            sectorElement.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('show');
+            });
+            
+            matrix.appendChild(sectorElement);
+        });
+
+        // Función para actualizar posición del tooltip considerando scroll
+        function updateTooltipPosition(e) {
+            if (tooltip.classList.contains('show')) {
+                const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                
+                // Posición base del tooltip (más alejada del cursor)
+                let left = e.clientX + scrollX + 20; // 20px a la derecha del cursor
+                let top = e.clientY + scrollY - 120; // 120px arriba del cursor
+                
+                // Ajustar posición horizontal para evitar desbordamiento
+                if (left + 300 > windowWidth + scrollX) {
+                    left = e.clientX + scrollX - 320; // Mostrar a la izquierda si no cabe a la derecha
+                }
+                if (left < scrollX + 10) {
+                    left = scrollX + 10; // Mínimo margen izquierdo
+                }
+                
+                // Ajustar posición vertical para evitar desbordamiento
+                if (top < scrollY + 10) {
+                    top = e.clientY + scrollY + 30; // Mostrar debajo del cursor si no cabe arriba
+                }
+                if (top + 200 > windowHeight + scrollY) {
+                    top = e.clientY + scrollY - 200; // Asegurar que quepa en pantalla
+                }
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+        }
+
+
+    </script>
+</body>
+</html>
