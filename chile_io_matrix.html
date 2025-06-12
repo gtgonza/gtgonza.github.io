@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Matrix - 111 Economic Sectors</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.2rem;
+            color: #076D55;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .credit {
+            font-size: 0.95rem;
+            color: #076D55;
+            font-weight: 500;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .matrix-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .sectors-matrix {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 3px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .sector {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #2d3748;
+            border: 1px solid rgba(0,0,0,0.06);
+            min-height: 35px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .sector:hover {
+            transform: scale(1.8);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        /* Paleta estética moderna - estado por defecto */
+        .sector { 
+            background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%);
+        }
+        
+        /* Sector seleccionado - Dorado */
+        .sector.selected { 
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #2d3748;
+            border: 2px solid rgba(255, 215, 0, 0.8);
+            font-weight: 700;
+        }
+
+        /* Sectores con menor valor agregado - Verde */
+        .sector.lower-value { 
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: #ffffff;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 15px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Mejoras para móvil */
+        @media (max-width: 768px) {
+            .tooltip {
+                font-size: 0.85rem;
+                padding: 12px 16px;
+                max-width: 280px;
+                border-radius: 8px;
+            }
+            
+            .sector {
+                min-height: 40px;
+                font-size: 0.7rem;
+            }
+            
+            .tooltip h4 {
+                font-size: 0.9rem;
+                line-height: 1.2;
+            }
+            
+            .tooltip .data-row {
+                font-size: 0.8rem;
+                margin: 4px 0;
+            }
+            
+            .tooltip .selected-sector-data {
+                font-size: 0.8rem;
+                margin: 6px 0 4px 0;
+                padding-top: 6px;
+            }
+            
+            .tooltip .code {
+                font-size: 0.75rem;
+                margin-top: 4px;
+            }
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip h4 {
+            margin-bottom: 5px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .tooltip p {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .tooltip .data-row {
+            margin: 3px 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .tooltip .selected-sector-data {
+            margin: 8px 0 5px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #FFD700;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 8px;
+        }
+
+        .tooltip .code {
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #076D55, #0a8a6b);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 10px 25px rgba(25,118,210,0.3);
+        }
+
+        .insight-box h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .insight-box p {
+            font-size: 1rem;
+            opacity: 0.95;
+            line-height: 1.4;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .legend-color.default {
+            background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%);
+        }
+
+        .legend-color.selected {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        }
+
+        .legend-color.lower {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        @media (max-width: 1200px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(10, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            
+            .sector:hover {
+                transform: scale(1.5);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sectors-matrix {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Chile Input-Output Matrix</h1>
+            <p class="subtitle">111 Interactive Economic Sectors - Click to compare</p>
+            <p class="explanation">
+                This matrix represents Chile's 111 economic sectors according to the Central Bank. 
+                Each square shows a sector with its value added and GDP participation in 2022. 
+                Click any sector to compare it with others.
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color selected"></div>
+                <span>Selected sector</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color lower"></div>
+                <span>Lower value added than selected</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color default"></div>
+                <span>Higher value added than selected</span>
+            </div>
+        </div>
+
+        <div class="matrix-container">
+            <div class="sectors-matrix" id="sectorsMatrix">
+                <!-- Los sectores se generan con JavaScript -->
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">111</div>
+                <div class="stat-label">Economic Sectors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">2022</div>
+                <div class="stat-label">Base Year</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">BCCh</div>
+                <div class="stat-label">Central Bank of Chile</div>
+            </div>
+        </div>
+
+        <div class="insight-box" id="insightBox">
+            <h3>🎯 Interactive Analysis</h3>
+            <p>Click on any sector to see how it compares with the other 110 sectors in Chile's economy</p>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <h4 id="tooltipTitle"></h4>
+        <div class="data-row" id="tooltipValorAgregado"></div>
+        <div class="data-row" id="tooltipPibPercent"></div>
+        <div class="selected-sector-data" id="tooltipSelectedSector" style="display: none;"></div>
+        <div class="code" id="tooltipCode"></div>
+    </div>
+
+    <script>
+        const sectors = [
+            { name: "Annual crops (cereals and others) and forage", code: "01", valorAgregado: "499", pibPercent: "0.21%", mayorSCC: 1 },
+            { name: "Vegetable growing and nursery products", code: "02", valorAgregado: "562", pibPercent: "0.24%", mayorSCC: 1 },
+            { name: "Grape cultivation", code: "03", valorAgregado: "271", pibPercent: "0.11%", mayorSCC: 1 },
+            { name: "Other fruit cultivation", code: "04", valorAgregado: "2.130", pibPercent: "0.90%", mayorSCC: 0 },
+            { name: "Cattle raising", code: "05", valorAgregado: "684", pibPercent: "0.29%", mayorSCC: 0 },
+            { name: "Pig farming", code: "06", valorAgregado: "112", pibPercent: "0.05%", mayorSCC: 1 },
+            { name: "Poultry farming", code: "07", valorAgregado: "489", pibPercent: "0.21%", mayorSCC: 1 },
+            { name: "Other animal breeding", code: "08", valorAgregado: "48", pibPercent: "0.02%", mayorSCC: 1 },
+            { name: "Support activities for agriculture and livestock", code: "09", valorAgregado: "1.145", pibPercent: "0.49%", mayorSCC: 0 },
+            { name: "Forestry and logging", code: "10", valorAgregado: "988", pibPercent: "0.42%", mayorSCC: 0 },
+            { name: "Aquaculture", code: "11", valorAgregado: "1.020", pibPercent: "0.43%", mayorSCC: 0 },
+            { name: "Fishing", code: "12", valorAgregado: "559", pibPercent: "0.24%", mayorSCC: 1 },
+            { name: "Coal mining", code: "13", valorAgregado: "1", pibPercent: "0.00%", mayorSCC: 1 },
+            { name: "Oil and natural gas extraction", code: "14", valorAgregado: "157", pibPercent: "0.07%", mayorSCC: 1 },
+            { name: "Copper mining", code: "15", valorAgregado: "25.428", pibPercent: "10.78%", mayorSCC: 0 },
+            { name: "Iron ore mining", code: "16", valorAgregado: "916", pibPercent: "0.39%", mayorSCC: 0 },
+            { name: "Other non-ferrous metal ore mining", code: "17", valorAgregado: "475", pibPercent: "0.20%", mayorSCC: 1 },
+            { name: "Other mining and mining support services", code: "18", valorAgregado: "8.199", pibPercent: "3.48%", mayorSCC: 0 },
+            { name: "Meat processing and preservation", code: "19", valorAgregado: "661", pibPercent: "0.28%", mayorSCC: 0 },
+            { name: "Fishmeal and fish oil production", code: "20", valorAgregado: "471", pibPercent: "0.20%", mayorSCC: 1 },
+            { name: "Fish and seafood processing and preservation", code: "21", valorAgregado: "1.467", pibPercent: "0.62%", mayorSCC: 0 },
+            { name: "Fruit and vegetable processing and preservation", code: "22", valorAgregado: "947", pibPercent: "0.40%", mayorSCC: 0 },
+            { name: "Vegetable oil production", code: "23", valorAgregado: "109", pibPercent: "0.05%", mayorSCC: 1 },
+            { name: "Dairy product manufacturing", code: "24", valorAgregado: "498", pibPercent: "0.21%", mayorSCC: 1 },
+            { name: "Grain mill products", code: "25", valorAgregado: "338", pibPercent: "0.14%", mayorSCC: 1 },
+            { name: "Animal feed manufacturing", code: "26", valorAgregado: "1.272", pibPercent: "0.54%", mayorSCC: 0 },
+            { name: "Bakery products", code: "27", valorAgregado: "884", pibPercent: "0.37%", mayorSCC: 0 },
+            { name: "Pasta and noodle manufacturing", code: "28", valorAgregado: "108", pibPercent: "0.05%", mayorSCC: 1 },
+            { name: "Other food product manufacturing", code: "29", valorAgregado: "573", pibPercent: "0.24%", mayorSCC: 1 },
+            { name: "Pisco and liquor production", code: "30", valorAgregado: "21", pibPercent: "0.01%", mayorSCC: 1 },
+            { name: "Wine production", code: "31", valorAgregado: "977", pibPercent: "0.41%", mayorSCC: 0 },
+            { name: "Beer production", code: "32", valorAgregado: "143", pibPercent: "0.06%", mayorSCC: 1 },
+            { name: "Non-alcoholic beverage manufacturing", code: "33", valorAgregado: "684", pibPercent: "0.29%", mayorSCC: 0 },
+            { name: "Tobacco product manufacturing", code: "34", valorAgregado: "24", pibPercent: "0.01%", mayorSCC: 1 },
+            { name: "Textile manufacturing", code: "35", valorAgregado: "95", pibPercent: "0.04%", mayorSCC: 1 },
+            { name: "Apparel manufacturing", code: "36", valorAgregado: "47", pibPercent: "0.02%", mayorSCC: 1 },
+            { name: "Leather and related products", code: "37", valorAgregado: "16", pibPercent: "0.01%", mayorSCC: 1 },
+            { name: "Footwear manufacturing", code: "38", valorAgregado: "25", pibPercent: "0.01%", mayorSCC: 1 },
+            { name: "Sawmilling and wood planing", code: "39", valorAgregado: "639", pibPercent: "0.27%", mayorSCC: 0 },
+            { name: "Wood product manufacturing", code: "40", valorAgregado: "1.025", pibPercent: "0.43%", mayorSCC: 0 },
+            { name: "Pulp manufacturing", code: "41", valorAgregado: "1.091", pibPercent: "0.46%", mayorSCC: 0 },
+            { name: "Paper and cardboard container manufacturing", code: "42", valorAgregado: "316", pibPercent: "0.13%", mayorSCC: 1 },
+            { name: "Other paper and cardboard product manufacturing", code: "43", valorAgregado: "120", pibPercent: "0.05%", mayorSCC: 1 },
+            { name: "Printing services", code: "44", valorAgregado: "354", pibPercent: "0.15%", mayorSCC: 1 },
+            { name: "Petroleum refining", code: "45", valorAgregado: "1.612", pibPercent: "0.68%", mayorSCC: 0 },
+            { name: "Basic chemical manufacturing", code: "46", valorAgregado: "2.295", pibPercent: "0.97%", mayorSCC: 0 },
+            { name: "Paint and coating manufacturing", code: "47", valorAgregado: "92", pibPercent: "0.04%", mayorSCC: 1 },
+            { name: "Pharmaceutical manufacturing", code: "48", valorAgregado: "760", pibPercent: "0.32%", mayorSCC: 0 },
+            { name: "Soap and cosmetic manufacturing", code: "49", valorAgregado: "60", pibPercent: "0.03%", mayorSCC: 1 },
+            { name: "Other chemical product manufacturing", code: "50", valorAgregado: "81", pibPercent: "0.03%", mayorSCC: 1 },
+            { name: "Rubber product manufacturing", code: "51", valorAgregado: "147", pibPercent: "0.06%", mayorSCC: 1 },
+            { name: "Plastic product manufacturing", code: "52", valorAgregado: "709", pibPercent: "0.30%", mayorSCC: 0 },
+            { name: "Glass and glass product manufacturing", code: "53", valorAgregado: "133", pibPercent: "0.06%", mayorSCC: 1 },
+            { name: "Cement, lime and gypsum manufacturing", code: "54", valorAgregado: "169", pibPercent: "0.07%", mayorSCC: 1 },
+            { name: "Concrete and other non-metallic mineral products", code: "55", valorAgregado: "519", pibPercent: "0.22%", mayorSCC: 1 },
+            { name: "Iron and steel manufacturing", code: "56", valorAgregado: "499", pibPercent: "0.21%", mayorSCC: 1 },
+            { name: "Non-ferrous metal manufacturing", code: "57", valorAgregado: "136", pibPercent: "0.06%", mayorSCC: 1 },
+            { name: "Fabricated metal product manufacturing", code: "58", valorAgregado: "1.735", pibPercent: "0.74%", mayorSCC: 0 },
+            { name: "Industrial and domestic machinery manufacturing", code: "59", valorAgregado: "768", pibPercent: "0.33%", mayorSCC: 0 },
+            { name: "Electrical and electronic equipment manufacturing", code: "60", valorAgregado: "476", pibPercent: "0.20%", mayorSCC: 1 },
+            { name: "Transportation equipment manufacturing", code: "61", valorAgregado: "225", pibPercent: "0.10%", mayorSCC: 1 },
+            { name: "Furniture manufacturing", code: "62", valorAgregado: "173", pibPercent: "0.07%", mayorSCC: 1 },
+            { name: "Machinery repair and other manufacturing", code: "63", valorAgregado: "1.433", pibPercent: "0.61%", mayorSCC: 0 },
+            { name: "Electricity generation", code: "64", valorAgregado: "1.518", pibPercent: "0.64%", mayorSCC: 0 },
+            { name: "Electricity transmission", code: "65", valorAgregado: "928", pibPercent: "0.39%", mayorSCC: 0 },
+            { name: "Electricity distribution", code: "66", valorAgregado: "891", pibPercent: "0.38%", mayorSCC: 0 },
+            { name: "Gas and steam supply", code: "67", valorAgregado: "716", pibPercent: "0.30%", mayorSCC: 0 },
+            { name: "Water supply", code: "68", valorAgregado: "1.307", pibPercent: "0.55%", mayorSCC: 0 },
+            { name: "Waste management and recycling", code: "69", valorAgregado: "748", pibPercent: "0.32%", mayorSCC: 0 },
+            { name: "Residential building construction", code: "70", valorAgregado: "3.177", pibPercent: "1.35%", mayorSCC: 0 },
+            { name: "Non-residential building construction", code: "71", valorAgregado: "1.118", pibPercent: "0.47%", mayorSCC: 0 },
+            { name: "Civil engineering construction", code: "72", valorAgregado: "5.202", pibPercent: "2.21%", mayorSCC: 0 },
+            { name: "Specialized construction activities", code: "73", valorAgregado: "5.931", pibPercent: "2.52%", mayorSCC: 0 },
+            { name: "Automotive trade", code: "74", valorAgregado: "3.169", pibPercent: "1.34%", mayorSCC: 0 },
+            { name: "Wholesale trade", code: "75", valorAgregado: "10.958", pibPercent: "4.65%", mayorSCC: 0 },
+            { name: "Retail trade", code: "76", valorAgregado: "9.873", pibPercent: "4.19%", mayorSCC: 0 },
+            { name: "Hotels", code: "77", valorAgregado: "794", pibPercent: "0.34%", mayorSCC: 0 },
+            { name: "Restaurants", code: "78", valorAgregado: "3.691", pibPercent: "1.57%", mayorSCC: 0 },
+            { name: "Railway transport", code: "79", valorAgregado: "107", pibPercent: "0.05%", mayorSCC: 1 },
+            { name: "Other land passenger transport", code: "80", valorAgregado: "1.275", pibPercent: "0.54%", mayorSCC: 0 },
+            { name: "Freight transport by road", code: "81", valorAgregado: "3.852", pibPercent: "1.63%", mayorSCC: 0 },
+            { name: "Pipeline transport", code: "82", valorAgregado: "137", pibPercent: "0.06%", mayorSCC: 1 },
+            { name: "Water transport", code: "83", valorAgregado: "455", pibPercent: "0.19%", mayorSCC: 1 },
+            { name: "Air transport", code: "84", valorAgregado: "822", pibPercent: "0.35%", mayorSCC: 0 },
+            { name: "Warehousing and storage", code: "85", valorAgregado: "936", pibPercent: "0.40%", mayorSCC: 0 },
+            { name: "Support activities for land transport", code: "86", valorAgregado: "1.699", pibPercent: "0.72%", mayorSCC: 0 },
+            { name: "Other transport support activities", code: "87", valorAgregado: "2.762", pibPercent: "1.17%", mayorSCC: 0 },
+            { name: "Postal and courier services", code: "88", valorAgregado: "437", pibPercent: "0.19%", mayorSCC: 1 },
+            { name: "Mobile telecommunications", code: "89", valorAgregado: "507", pibPercent: "0.22%", mayorSCC: 1 },
+            { name: "Fixed-line and long-distance telecommunications", code: "90", valorAgregado: "617", pibPercent: "0.26%", mayorSCC: 0 },
+            { name: "Other telecommunications activities", code: "91", valorAgregado: "919", pibPercent: "0.39%", mayorSCC: 0 },
+            { name: "Computer and information services", code: "92", valorAgregado: "4.130", pibPercent: "1.75%", mayorSCC: 0 },
+            { name: "Publishing, broadcasting and content production", code: "93", valorAgregado: "673", pibPercent: "0.29%", mayorSCC: 0 },
+            { name: "Financial intermediation", code: "94", valorAgregado: "5.001", pibPercent: "2.12%", mayorSCC: 0 },
+            { name: "Insurance and reinsurance", code: "95", valorAgregado: "834", pibPercent: "0.35%", mayorSCC: 0 },
+            { name: "Financial auxiliaries", code: "96", valorAgregado: "2.844", pibPercent: "1.21%", mayorSCC: 0 },
+            { name: "Real estate activities", code: "97", valorAgregado: "5.212", pibPercent: "2.21%", mayorSCC: 0 },
+            { name: "Housing services", code: "98", valorAgregado: "15.539", pibPercent: "6.59%", mayorSCC: 0 },
+            { name: "Legal and accounting services", code: "99", valorAgregado: "2.834", pibPercent: "1.20%", mayorSCC: 0 },
+            { name: "Architectural and engineering services", code: "100", valorAgregado: "5.978", pibPercent: "2.53%", mayorSCC: 0 },
+            { name: "Other professional, scientific and technical services", code: "101", valorAgregado: "6.379", pibPercent: "2.70%", mayorSCC: 0 },
+            { name: "Rental and leasing activities", code: "102", valorAgregado: "2.525", pibPercent: "1.07%", mayorSCC: 0 },
+            { name: "Administrative and support services", code: "103", valorAgregado: "7.357", pibPercent: "3.12%", mayorSCC: 0 },
+            { name: "Public administration", code: "104", valorAgregado: "11.638", pibPercent: "4.94%", mayorSCC: 0 },
+            { name: "Public education", code: "105", valorAgregado: "7.819", pibPercent: "3.32%", mayorSCC: 0 },
+            { name: "Private education", code: "106", valorAgregado: "4.961", pibPercent: "2.10%", mayorSCC: 0 },
+            { name: "Public health", code: "107", valorAgregado: "7.474", pibPercent: "3.17%", mayorSCC: 0 },
+            { name: "Private health and social assistance", code: "108", valorAgregado: "7.213", pibPercent: "3.06%", mayorSCC: 0 },
+            { name: "Membership organizations", code: "109", valorAgregado: "838", pibPercent: "0.36%", mayorSCC: 0 },
+            { name: "Arts, entertainment and recreation", code: "110", valorAgregado: "1.197", pibPercent: "0.51%", mayorSCC: 0 },
+            { name: "Other personal services", code: "111", valorAgregado: "2.207", pibPercent: "0.94%", mayorSCC: 0 }
+        ];
+
+        const matrix = document.getElementById('sectorsMatrix');
+        const tooltip = document.getElementById('tooltip');
+        const tooltipTitle = document.getElementById('tooltipTitle');
+        const tooltipValorAgregado = document.getElementById('tooltipValorAgregado');
+        const tooltipPibPercent = document.getElementById('tooltipPibPercent');
+        const tooltipSelectedSector = document.getElementById('tooltipSelectedSector');
+        const tooltipCode = document.getElementById('tooltipCode');
+        const insightBox = document.getElementById('insightBox');
+
+        let selectedSector = null;
+        let sectorElements = [];
+
+        // Función para parsear el valor agregado eliminando puntos
+        function parseValorAgregado(valor) {
+            return parseFloat(valor.replace(/\./g, ''));
+        }
+
+        // Crear la matriz
+        sectors.forEach((sector, index) => {
+            const sectorElement = document.createElement('div');
+            sectorElement.className = 'sector';
+            sectorElement.textContent = (index + 1).toString();
+            sectorElement.setAttribute('data-sector', JSON.stringify(sector));
+            sectorElement.setAttribute('data-index', index);
+            
+            sectorElement.addEventListener('mouseenter', (e) => {
+                showTooltip(sector, e);
+            });
+            
+            sectorElement.addEventListener('mouseleave', () => {
+                hideTooltip();
+            });
+            
+            // Click para seleccionar sector
+            sectorElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectSector(sector, index);
+            });
+            
+            // Soporte para dispositivos móviles
+            sectorElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                showTooltip(sector, e.touches[0]);
+            });
+            
+            matrix.appendChild(sectorElement);
+            sectorElements.push(sectorElement);
+        });
+
+        // Función para seleccionar un sector
+        function selectSector(sector, index) {
+            selectedSector = sector;
+            const selectedValue = parseValorAgregado(sector.valorAgregado);
+            
+            // Actualizar colores de todos los sectores
+            sectorElements.forEach((element, i) => {
+                element.classList.remove('selected', 'lower-value');
+                
+                if (i === index) {
+                    element.classList.add('selected');
+                } else {
+                    const currentSector = sectors[i];
+                    const currentValue = parseValorAgregado(currentSector.valorAgregado);
+                    
+                    if (currentValue < selectedValue) {
+                        element.classList.add('lower-value');
+                    }
+                }
+            });
+            
+            // Actualizar insight box
+            const lowerCount = sectors.filter(s => 
+                parseValorAgregado(s.valorAgregado) < selectedValue
+            ).length;
+            
+            insightBox.innerHTML = `
+                <h3>📊 Selected: ${sector.name}</h3>
+                <p><strong>${sector.valorAgregado}</strong> billion pesos (${sector.pibPercent} of GDP) • 
+                Greater than <strong>${lowerCount}/111</strong> sectors</p>
+            `;
+        }
+
+        // Función para mostrar tooltip
+        function showTooltip(sector, event) {
+            tooltipTitle.textContent = sector.name;
+            tooltipValorAgregado.textContent = `Value Added: ${sector.valorAgregado} billion Chilean pesos 2022`;
+            tooltipPibPercent.textContent = `GDP Share 2022: ${sector.pibPercent}`;
+            tooltipCode.textContent = `Code: ${sector.code}`;
+            
+            // Mostrar información del sector seleccionado si hay uno
+            if (selectedSector) {
+                tooltipSelectedSector.textContent = `Selected sector GDP: ${selectedSector.pibPercent}`;
+                tooltipSelectedSector.style.display = 'block';
+            } else {
+                tooltipSelectedSector.style.display = 'none';
+            }
+            
+            tooltip.classList.add('show');
+            updateTooltipPosition(event);
+        }
+
+        // Función para ocultar tooltip
+        function hideTooltip() {
+            tooltip.classList.remove('show');
+        }
+
+        // Click fuera para deseleccionar
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('sector')) {
+                // Deseleccionar
+                selectedSector = null;
+                sectorElements.forEach(element => {
+                    element.classList.remove('selected', 'lower-value');
+                });
+                
+                insightBox.innerHTML = `
+                    <h3>🎯 Interactive Analysis</h3>
+                    <p>Click on any sector to see how it compares with the other 110 sectors in Chile's economy</p>
+                `;
+            }
+        });
+
+        // Función para actualizar posición del tooltip
+        function updateTooltipPosition(e) {
+            if (tooltip.classList.contains('show')) {
+                const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                
+                const isMobile = windowWidth <= 768;
+                
+                if (isMobile) {
+                    let left = (windowWidth - 300) / 2 + scrollX;
+                    let top = e.clientY + scrollY - 150;
+                    
+                    if (left < scrollX + 10) left = scrollX + 10;
+                    if (left + 300 > windowWidth + scrollX) left = windowWidth + scrollX - 310;
+                    
+                    if (top < scrollY + 10) {
+                        top = e.clientY + scrollY + 30;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                } else {
+                    let left = e.clientX + scrollX + 20;
+                    let top = e.clientY + scrollY - 120;
+                    
+                    if (left + 300 > windowWidth + scrollX) {
+                        left = e.clientX + scrollX - 320;
+                    }
+                    if (left < scrollX + 10) {
+                        left = scrollX + 10;
+                    }
+                    
+                    if (top < scrollY + 10) {
+                        top = e.clientY + scrollY + 30;
+                    }
+                    if (top + 200 > windowHeight + scrollY) {
+                        top = e.clientY + scrollY - 200;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
