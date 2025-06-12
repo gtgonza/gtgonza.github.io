@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - Gonzalo Gonzalez Melo</title>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Main container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            max-width: 1200px;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Top section divided into two columns */
+        .top {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Left: Title and description */
+        .top-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 3rem 2rem;
+            width: 50%;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* Right: Portfolio items */
+        .top-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 3rem 2rem;
+            width: 50%;
+            background-color: #eaeaea;
+        }
+
+        /* Portfolio items */
+        .portfolio-items {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        .portfolio-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .portfolio-item h3 {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #000;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .portfolio-item a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .portfolio-item a:hover h3 {
+            text-decoration: underline;
+        }
+
+        .portfolio-item p {
+            font-size: 1rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .portfolio-item .date {
+            font-size: 0.9rem;
+            color: #999;
+            margin-top: 0.3rem;
+        }
+
+        /* Bottom section */
+        .bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-top: 1px solid #eee;
+        }
+
+        /* Navigation link */
+        .nav-link {
+            text-decoration: none;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Time display */
+        .time-display {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .top {
+                flex-direction: column;
+            }
+            
+            .top-left, .top-right {
+                width: 100%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Top section: divided into two columns -->
+        <div class="top">
+            <!-- Left column: Title and description -->
+            <div class="top-left">
+                <h1>Portfolio</h1>
+                <p class="description">
+                    A collection of data visualization projects and analytical tools developed for various clients and research purposes.
+                </p>
+                <p class="description">
+                    Each project represents an intersection of economics, data science, and visual design.
+                </p>
+            </div>
+            
+            <!-- Right column: Portfolio items -->
+            <div class="top-right">
+                <div class="portfolio-items">
+                    <!-- Chile I-O Matrix Project -->
+                    <div class="portfolio-item">
+                        <a href="chile_io_matrix.html">
+                            <h3>Chile Input-Output Matrix Interactive Visualization</h3>
+                        </a>
+                        <p>
+                            An interactive visualization of Chile's 111 economic sectors based on the Central Bank's Input-Output Matrix. 
+                            This tool allows users to explore and compare the value added and GDP participation of different economic sectors through an intuitive interface.
+                    </div>
+
+                    <!-- Future projects can be added here -->
+                    <!-- Example structure:
+                    <div class="portfolio-item">
+                        <a href="project2.html">
+                            <h3>Project Title 2</h3>
+                        </a>
+                        <p>
+                            Brief description of the project.
+                        </p>
+                        <p class="date">Client/Context | Year</p>
+                    </div>
+                    -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom section -->
+        <div class="bottom">
+            <a href="index.html" class="nav-link">← Back to Home</a>
+            
+            <!-- Time display -->
+            <div class="time-display">
+                <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
+                    Time in Santiago, Chile
+                </a>
+                <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
