@@ -112,17 +112,54 @@
         /* Tooltip */
         .tooltip {
             position: absolute;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             color: white;
-            padding: 12px 16px;
-            border-radius: 8px;
+            padding: 15px 18px;
+            border-radius: 10px;
             font-size: 0.9rem;
             pointer-events: none;
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s ease;
             max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Mejoras para móvil */
+        @media (max-width: 768px) {
+            .tooltip {
+                font-size: 0.85rem;
+                padding: 12px 16px;
+                max-width: 280px;
+                border-radius: 8px;
+            }
+            
+            .sector {
+                min-height: 40px; /* Más grande para facilitar el toque */
+                font-size: 0.7rem;
+            }
+            
+            .tooltip h4 {
+                font-size: 0.9rem;
+                line-height: 1.2;
+            }
+            
+            .tooltip .data-row {
+                font-size: 0.8rem;
+                margin: 4px 0;
+            }
+            
+            .tooltip .scc-data {
+                font-size: 0.8rem;
+                margin: 6px 0 4px 0;
+                padding-top: 6px;
+            }
+            
+            .tooltip .code {
+                font-size: 0.75rem;
+                margin-top: 4px;
+            }
         }
 
         .tooltip.show {
@@ -246,7 +283,7 @@
     <div class="container">
         <div class="header">
             <h1 class="title">Matriz Insumo-Producto Chile</h1>
-            <p class="subtitle">111 Sectores Económicos Interactivos - Pasa el mouse sobre cada sector</p>
+            <p class="subtitle">111 Sectores Económicos Interactivos - Pasa el mouse o toca cada sector</p>
             <p class="explanation">
                 Esta matriz representa los 111 sectores económicos de Chile según el Banco Central. 
                 Cada cuadrado muestra un sector con su valor agregado y participación en el PIB 2022. 
@@ -428,26 +465,61 @@
             sectorElement.setAttribute('data-sector', JSON.stringify(sector));
             
             sectorElement.addEventListener('mouseenter', (e) => {
-                tooltipTitle.textContent = sector.name;
-                tooltipValorAgregado.textContent = `Valor Agregado: ${sector.valorAgregado} miles de millones de pesos 2022`;
-                tooltipPibPercent.textContent = `Participación PIB 2022: ${sector.pibPercent}`;
-                tooltipCode.textContent = `Código: ${sector.code}`;
-                
-                // Mostrar información SCC en TODOS los sectores
-                tooltipScc.textContent = 'Participación SCC en PIB 2022: 0,25%';
-                tooltipScc.style.display = 'block';
-                
-                tooltip.classList.add('show');
-                
-                // Posicionar tooltip considerando scroll
-                updateTooltipPosition(e);
+                showTooltip(sector, e);
             });
             
             sectorElement.addEventListener('mouseleave', () => {
-                tooltip.classList.remove('show');
+                hideTooltip();
+            });
+            
+            // Soporte para dispositivos móviles
+            sectorElement.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Evitar scroll accidental
+                showTooltip(sector, e.touches[0]); // Usar la primera touch
+            });
+            
+            sectorElement.addEventListener('click', (e) => {
+                // Para móviles que no soportan touchstart
+                showTooltip(sector, e);
             });
             
             matrix.appendChild(sectorElement);
+        });
+
+        // Función para mostrar tooltip
+        function showTooltip(sector, event) {
+            tooltipTitle.textContent = sector.name;
+            tooltipValorAgregado.textContent = `Valor Agregado: ${sector.valorAgregado} miles de millones de pesos 2022`;
+            tooltipPibPercent.textContent = `Participación PIB 2022: ${sector.pibPercent}`;
+            tooltipCode.textContent = `Código: ${sector.code}`;
+            
+            // Mostrar información SCC en TODOS los sectores
+            tooltipScc.textContent = 'Participación SCC en PIB 2022: 0,25%';
+            tooltipScc.style.display = 'block';
+            
+            tooltip.classList.add('show');
+            
+            // Posicionar tooltip considerando scroll
+            updateTooltipPosition(event);
+        }
+
+        // Función para ocultar tooltip
+        function hideTooltip() {
+            tooltip.classList.remove('show');
+        }
+
+        // Ocultar tooltip al tocar fuera en móviles
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.classList.contains('sector') && tooltip.classList.contains('show')) {
+                hideTooltip();
+            }
+        });
+
+        // Ocultar tooltip al hacer click fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('sector') && tooltip.classList.contains('show')) {
+                hideTooltip();
+            }
         });
 
         // Función para actualizar posición del tooltip considerando scroll
@@ -458,28 +530,46 @@
                 const windowWidth = window.innerWidth;
                 const windowHeight = window.innerHeight;
                 
-                // Posición base del tooltip (más alejada del cursor)
-                let left = e.clientX + scrollX + 20; // 20px a la derecha del cursor
-                let top = e.clientY + scrollY - 120; // 120px arriba del cursor
+                // Detectar si es dispositivo móvil
+                const isMobile = windowWidth <= 768;
                 
-                // Ajustar posición horizontal para evitar desbordamiento
-                if (left + 300 > windowWidth + scrollX) {
-                    left = e.clientX + scrollX - 320; // Mostrar a la izquierda si no cabe a la derecha
+                if (isMobile) {
+                    // En móviles, centrar el tooltip en la pantalla
+                    let left = (windowWidth - 300) / 2 + scrollX;
+                    let top = e.clientY + scrollY - 150;
+                    
+                    // Asegurar que no se salga de la pantalla
+                    if (left < scrollX + 10) left = scrollX + 10;
+                    if (left + 300 > windowWidth + scrollX) left = windowWidth + scrollX - 310;
+                    
+                    if (top < scrollY + 10) {
+                        top = e.clientY + scrollY + 30; // Mostrar debajo
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                } else {
+                    // Lógica original para desktop
+                    let left = e.clientX + scrollX + 20;
+                    let top = e.clientY + scrollY - 120;
+                    
+                    if (left + 300 > windowWidth + scrollX) {
+                        left = e.clientX + scrollX - 320;
+                    }
+                    if (left < scrollX + 10) {
+                        left = scrollX + 10;
+                    }
+                    
+                    if (top < scrollY + 10) {
+                        top = e.clientY + scrollY + 30;
+                    }
+                    if (top + 200 > windowHeight + scrollY) {
+                        top = e.clientY + scrollY - 200;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
                 }
-                if (left < scrollX + 10) {
-                    left = scrollX + 10; // Mínimo margen izquierdo
-                }
-                
-                // Ajustar posición vertical para evitar desbordamiento
-                if (top < scrollY + 10) {
-                    top = e.clientY + scrollY + 30; // Mostrar debajo del cursor si no cabe arriba
-                }
-                if (top + 200 > windowHeight + scrollY) {
-                    top = e.clientY + scrollY - 200; // Asegurar que quepa en pantalla
-                }
-                
-                tooltip.style.left = left + 'px';
-                tooltip.style.top = top + 'px';
             }
         }
 
