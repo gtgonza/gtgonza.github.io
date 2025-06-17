@@ -397,7 +397,7 @@
             </div>
         </div>
 
-        <div class="insight-box">
+        <div class="insight-box" id="insightBox">
             <h3>🎯 Insight Clave</h3>
             <p>La participación del SCC (0,25% del PIB) es mayor que en <strong>43/111 sectores</strong> de la MIP 2022</p>
         </div>
@@ -538,8 +538,8 @@
         let impactoActual = 'directo'; // Variable para rastrear el impacto actual
         let sectorElements = [];
 
-        // Función para cambiar entre impacto directo y total
-        function cambiarImpacto(tipo) {
+        // Hacer la función global para el onclick
+        window.cambiarImpacto = function(tipo) {
             impactoActual = tipo;
             
             // Actualizar botones activos
@@ -577,14 +577,13 @@
         // Función para actualizar el insight box
         function actualizarInsightBox() {
             const umbralSCC = impactoActual === 'directo' ? 0.25 : 1.2;
-            const tipoImpacto = impactoActual === 'directo' ? 'directo' : 'total';
             
             const sectoresInferiores = sectors.filter(s => 
                 parsePibPercent(s.pibPercent) < umbralSCC
             ).length;
             
             insightBox.innerHTML = `
-                <h3>🎯 Insight Clave - Impacto ${tipoImpacto.charAt(0).toUpperCase() + tipoImpacto.slice(1)}</h3>
+                <h3>🎯 Insight Clave</h3>
                 <p>La participación del SCC (${umbralSCC.toString().replace('.', ',')}% del PIB) es mayor que en <strong>${sectoresInferiores}/111 sectores</strong> de la MIP 2022</p>
             `;
         }
@@ -633,8 +632,10 @@
             tooltipPibPercent.textContent = `Participación PIB 2022: ${sector.pibPercent}`;
             tooltipCode.textContent = `Código: ${sector.code}`;
             
-            // Mostrar información SCC en TODOS los sectores
-            tooltipScc.textContent = 'Participación SCC en PIB 2022: 0,25%';
+            // Mostrar información SCC según el impacto seleccionado
+            const umbralSCC = impactoActual === 'directo' ? '0,25%' : '1,2%';
+            const tipoImpacto = impactoActual === 'directo' ? 'Directo' : 'Total';
+            tooltipScc.textContent = `Impacto ${tipoImpacto} SCC en PIB: ${umbralSCC}`;
             tooltipScc.style.display = 'block';
             
             tooltip.classList.add('show');
