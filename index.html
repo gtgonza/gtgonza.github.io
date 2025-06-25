@@ -3,339 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gonzalo Gonzalez Melo</title>
+    <title>GONZALO GONZALEZ MELO</title>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <style>
-        /* Reset */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            background-color: #ffffff; 
-            color: #333; 
-            line-height: 1.6;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        a { text-decoration: none; color: inherit; }
-
-        /* Photo strip - vertical band */
-        .photo-strip {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 80px;
-            height: 100vh;
-            background: #f5f5f5;
-            overflow: hidden;
-            z-index: 10;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-        }
-        
-        .photo-strip-inner {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        
-        .strip-photo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-        }
-        
-        .strip-photo.active {
-            opacity: 0.8;
-        }
-        
-        .strip-label {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%) rotate(-90deg);
-            font-size: 0.7rem;
-            color: #666;
-            background: rgba(255,255,255,0.9);
-            padding: 2px 8px;
-            border-radius: 10px;
-            white-space: nowrap;
-            pointer-events: none;
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        /* Header */
-        header { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            background: rgba(255,255,255,0.95); 
-            backdrop-filter: blur(15px); 
-            box-shadow: 0 1px 20px rgba(0,0,0,0.08); 
-            z-index: 100; 
-            transition: all 0.3s ease;
-            margin-left: 80px;
-            width: calc(100% - 80px);
-        }
-        
-        .header-container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            padding: 1.2rem 2rem; 
-        }
-        
-        .site-title { 
-            font-size: 1.4rem; 
-            font-weight: 600; 
-            letter-spacing: 0.02em;
-            color: #2c2c2c;
-        }
-        
-        .nav-list { 
-            list-style: none; 
-            display: flex; 
-            gap: 2rem; 
-        }
-        
-        .nav-list li a { 
-            font-size: 1rem; 
-            font-weight: 500; 
-            position: relative; 
-            padding: 0.5rem 0;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-list li a:hover { 
-            color: #666; 
-        }
-        
-        .nav-list li a::after { 
-            content: ''; 
-            position: absolute; 
-            left: 0; 
-            bottom: 0; 
-            width: 0; 
-            height: 2px; 
-            background: #333; 
-            transition: width 0.3s ease;
-        }
-        
-        .nav-list li a:hover::after { 
-            width: 100%; 
-        }
-
-        /* Main Content */
-        .main-content { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            padding-top: 5rem;
-            margin-left: 80px;
-            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-            position: relative;
-        }
-        
-        .content-wrapper { 
-            display: flex; 
-            width: 100%; 
-            max-width: 1200px; 
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
             align-items: center;
-            gap: 4rem;
-            padding: 0 2rem;
-        }
-        
-        .text-content { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
             justify-content: center;
-        }
-        
-        .text-content h1 { 
-            font-size: 3.5rem; 
-            margin-bottom: 1.5rem; 
-            text-transform: uppercase; 
-            font-weight: 300;
-            letter-spacing: 0.05em;
-            color: #2c2c2c;
-            line-height: 1.1;
-        }
-        
-        .text-content p { 
-            font-size: 1.3rem; 
-            color: #666; 
-            line-height: 1.8;
-            max-width: 500px;
-        }
-        
-        .image-content { 
-            flex: 0 0 auto; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            position: relative;
-        }
-        
-        .image-content img { 
-            width: 320px; 
-            height: 400px;
-            object-fit: cover;
-            border-radius: 16px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-            transition: all 0.3s ease;
-        }
-        
-        .image-content img:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+            min-height: 100vh;
         }
 
-        /* Time display in corner */
-        .time-corner {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            font-size: 0.9rem;
-            color: #666;
-            z-index: 50;
+        /* Main container that divides everything in half vertically */
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            max-width: 1200px;
+            width: 100%;
+            height: 100vh;
         }
-        
-        .time-corner a {
-            color: #666;
-            transition: color 0.3s ease;
+
+        /* Top section divided into two columns */
+        .top {
+            display: flex;
+            flex: 1;
         }
-        
-        .time-corner a:hover {
+
+        /* Left: Name and description */
+        .top-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+            width: 50%;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* Profile photo styling */
+        .profile-photo {
+            width: 140px;
+            height: 180px;
+            border-radius: 8px;
+            object-fit: cover;
+            object-position: center top;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Right: Links */
+        .top-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+            width: 50%;
+            background-color: #eaeaea;
+        }
+
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Links in black */
+        .links a {
+            text-decoration: none;
+            color: #000000;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Bottom section with image slider and time */
+        .bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #ffffff;
+            flex: 1;
+            position: relative;
+        }
+
+        /* Slider container */
+        .slider {
+            position: relative;
+            width: 100%;
+            max-width: 1200px; /* Adjusted to fit 1 image at a time */
+            height: 400px; /* Fijamos una altura constante */
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .slides {
+            display: flex;
+            width: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .slides img {
+            width: 100%;
+            height: 100%; /* La imagen se ajusta al 100% del contenedor */
+            object-fit: cover; /* Mantiene la proporción y cubre todo el contenedor */
+        }
+
+        /* Text overlay on the slider */
+        .slider-text {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1rem;
+        }
+
+        .time-display {
+            font-size: 1rem;
             color: #333;
         }
 
-        /* Responsive */
+        /* Responsive design */
         @media (max-width: 768px) {
-            .photo-strip {
-                display: none;
+            .top {
+                flex-direction: column;
             }
             
-            header {
-                margin-left: 0;
+            .top-left, .top-right {
                 width: 100%;
             }
             
-            .main-content {
-                margin-left: 0;
+            h1 {
+                font-size: 2rem;
             }
             
-            body {
-                overflow: auto;
-                height: auto;
-            }
-            
-            .main-content {
-                height: auto;
-                min-height: 100vh;
-                padding: 6rem 0 3rem;
-            }
-            
-            .content-wrapper { 
-                flex-direction: column; 
-                gap: 3rem;
-                text-align: center;
-            }
-            
-            .text-content h1 { 
-                font-size: 2.5rem; 
-            }
-            
-            .image-content img {
-                width: 250px;
-                height: 320px;
-            }
-            
-            .nav-list {
-                gap: 1rem;
-            }
-            
-            .nav-list li a {
-                font-size: 0.9rem;
-            }
-            
-            .time-corner {
-                position: relative;
-                text-align: center;
-                margin-top: 2rem;
+            .profile-photo {
+                width: 120px;
+                height: 150px;
             }
         }
     </style>
 </head>
+
 <body>
-    <!-- Photo strip -->
-    <div class="photo-strip">
-        <div class="photo-strip-inner">
-            <img src="https://i.imgur.com/lOMdABx.jpg" alt="" class="strip-photo active">
-            <img src="https://i.imgur.com/4cREDRw.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/LR5Mhka.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/fiYKiVk.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/LEjIQkU.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/iZZBrV7.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/9atX6WF.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/ruqrASr.jpg" alt="" class="strip-photo">
-            <img src="https://i.imgur.com/46Kbz4M.jpg" alt="" class="strip-photo">
-            <div class="strip-label">analog</div>
-        </div>
-    </div>
-
-    <header>
-        <div class="header-container">
-            <h1 class="site-title">Gonzalo Gonzalez Melo</h1>
-            <nav>
-                <ul class="nav-list">
-                    <li><a href="http://gtgonza.github.io/cv.html">Resume</a></li>
-                    <li><a href="http://gtgonza.github.io/research.html">Research</a></li>
-                    <li><a href="http://gtgonza.github.io/portfolio.html">Portfolio</a></li>
-                    <li><a href="http://gtgonza.github.io/contact.html">Contact</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
-    <main class="main-content">
-        <div class="content-wrapper">
-            <div class="text-content">
+    <div class="container">
+        <!-- Top section: divided into two columns -->
+        <div class="top">
+            <!-- Left column: Name and description -->
+            <div class="top-left">
                 <h1>Gonzalo Gonzalez Melo</h1>
-                <p>Welcome to my personal page. Here you can find my resume, research, portfolio and ways to get in touch.</p>
+                <p>
+                    Welcome to my personal page. Here you can find my resume, research, portfolio and ways to get in touch.
+                </p>
+                <!-- Profile photo -->
+                <img src="foto_gg.jpg" alt="Foto de Gonzalo" class="profile-photo">
             </div>
-            <div class="image-content">
-                <img src="foto_gg.jpg" alt="Foto de Gonzalo">
+            <!-- Right column: Links -->
+            <div class="top-right">
+                <div class="links">
+                    <a href="http://gtgonza.github.io/cv.html">Resume</a>
+                    <a href="http://gtgonza.github.io/research.html">Research</a>
+                    <a href="http://gtgonza.github.io/portfolio.html">Portfolio</a>
+                    <a href="http://gtgonza.github.io/contact.html">Contact</a>
+                </div>
             </div>
         </div>
-    </main>
 
-    <div class="time-corner">
-        <a href="//24timezones.com/Santiago/time" target="_blank" rel="nofollow">Santiago, Chile</a>
+        <!-- Bottom section: Image slider and time -->
+        <div class="bottom">
+            <!-- Slider for images -->
+            <div class="slider">
+                <div class="slides">
+                    <img src="https://i.imgur.com/lOMdABx.jpg" alt="Image 1">
+                    <img src="https://i.imgur.com/4cREDRw.jpg" alt="Image 2">
+                    <img src="https://i.imgur.com/LR5Mhka.jpg" alt="Image 3">
+                    <img src="https://i.imgur.com/fiYKiVk.jpg" alt="Image 4">
+                    <img src="https://i.imgur.com/LEjIQkU.jpg" alt="Image 5">
+                    <img src="https://i.imgur.com/iZZBrV7.jpg" alt="Image 6">
+                    <img src="https://i.imgur.com/9atX6WF.jpg" alt="Image 7">
+                    <img src="https://i.imgur.com/ruqrASr.jpg" alt="Image 8">
+                    <img src="https://i.imgur.com/46Kbz4M.jpg" alt="Image 9">
+                </div>
+                <div class="slider-text">Analog photography is my hobby</div>
+            </div>
+
+            <!-- Time display -->
+            <div class="time-display">
+                <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
+                    Time in Santiago, Chile
+                </a>
+                <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Photo strip rotation
-        const stripPhotos = document.querySelectorAll('.strip-photo');
-        let currentStripIndex = 0;
+        const slides = document.querySelector('.slides');
+        const totalSlides = slides.children.length;
+        let index = 0;
+        let slideWidth = document.querySelector('.slider').offsetWidth; // Get the width of the slider
 
-        function rotateStripPhoto() {
-            stripPhotos[currentStripIndex].classList.remove('active');
-            currentStripIndex = (currentStripIndex + 1) % stripPhotos.length;
-            stripPhotos[currentStripIndex].classList.add('active');
+        function showNextSlide() {
+            if (index < totalSlides - 1) {
+                index++;
+                slides.style.transition = 'transform 0.5s ease-in-out';
+            } else {
+                // Pause at the last slide for 3 seconds and then go back to the first slide
+                setTimeout(() => {
+                    index = 0;
+                    slides.style.transition = 'none'; // Disable transition for instant return
+                    slides.style.transform = `translateX(-${index * slideWidth}px)`;
+                    setTimeout(() => {
+                        slides.style.transition = 'transform 0.5s ease-in-out'; // Re-enable transition
+                    }, 20); // Add a tiny delay before restoring the transition
+                }, 3000); // Wait for 3 seconds at the last slide
+            }
+            slides.style.transform = `translateX(-${index * slideWidth}px)`;
         }
 
-        // Change photo every 3 seconds
-        setInterval(rotateStripPhoto, 3000);
-    </script>
-    
-    <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
+        setInterval(showNextSlide, 3000); // Change image every 3 seconds
+
+        // Ensure the slider resizes correctly if the window size changes
+        window.addEventListener('resize', () => {
+            slideWidth = document.querySelector('.slider').offsetWidth;
+        });
+    </script> 
 </body>
 </html>
