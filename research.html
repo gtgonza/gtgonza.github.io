@@ -13,7 +13,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             background-color: #ffffff;
@@ -21,11 +20,18 @@
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
             min-height: 100vh;
         }
-
+        
+        /* Main container */
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+        
         /* Container to divide the page into two sections */
         .container {
             display: flex;
@@ -35,7 +41,6 @@
             max-width: 1200px;
             padding: 2rem;
         }
-
         /* Gray box for research interests */
         .research-box {
             background-color: #f5f5f5;
@@ -44,63 +49,103 @@
             text-align: left;
             border-radius: 8px;
         }
-
         h1 {
             font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 1rem;
         }
-
         p {
             font-size: 1.2rem;
             color: #666;
             line-height: 1.6;
         }
-
         /* Right section for listing research */
         .research-list {
             width: 40%;
             padding-left: 2rem;
         }
-
         ul {
             list-style-type: disc;
             padding-left: 1rem;
         }
-
         /* Style for the research title */
         .research-title {
             font-weight: bold;
         }
-
         /* Style for coauthors */
         .research-authors {
             font-weight: normal;
             font-style: italic;
         }
+        
+        /* Bottom section */
+        .bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-top: 1px solid #eee;
+        }
+
+        /* Navigation link */
+        .nav-link {
+            text-decoration: none;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            
+            .research-box, .research-list {
+                width: 100%;
+            }
+            
+            .research-list {
+                padding-left: 0;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <!-- Left section: Research interests -->
-        <div class="research-box">
-            <h1>Research Interests</h1>
-            <p>
-                My research interests are in the fields of machine learning, political economy, development economics, cultural economics, and economic history.
-            </p>
+    <div class="main-container">
+        <div class="container">
+            <!-- Left section: Research interests -->
+            <div class="research-box">
+                <h1>Research Interests</h1>
+                <p>
+                    My research interests are in the fields of development economics, political economy, cultural economics, economics of education and machine learning.
+                </p>
+            </div>
+            <!-- Right section: List of research projects -->
+            <div class="research-list">
+                <ul>
+                    <li>
+                        <span class="research-title">Molded Culture: Ceramics and Cultural Change in Pre-Colonial Peru</span> 
+                        <span class="research-authors">with Miriam Artiles and Mateo Uribe-Castro</span>
+                    </li>
+                </ul>
+            </div>
         </div>
-
-        <!-- Right section: List of research projects -->
-        <div class="research-list">
-            <ul>
-                <li>
-                    <span class="research-title">Molded Culture</span> 
-                    <span class="research-authors">with Miriam Artiles and Mateo Uribe-Castro</span>
-                </li>
-            </ul>
-        </div>
+    </div>
+    
+    <!-- Bottom section -->
+    <div class="bottom">
+        <a href="index.html" class="nav-link">← Back to Home</a>
     </div>
 </body>
 </html>
-
