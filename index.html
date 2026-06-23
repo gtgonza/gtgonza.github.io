@@ -1,267 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GONZALO GONZALEZ MELO</title>
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <style>
-        /* Reset CSS */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gonzalo González Melo</title>
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEEEA;
+    --ink:#17150F;
+    --soft:#6F6B62;
+    --hair:#D7D3CA;
+    --hair-strong:#BCB7AC;
+    --frame:#E7E5DF;
+    --r:2px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"Inter",sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+  ::selection{background:var(--ink);color:var(--paper)}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 clamp(1.25rem,4vw,3.25rem)}
 
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
+  .label{font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--soft)}
 
-        /* Main container that divides everything in half vertically */
-        .container {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            max-width: 1200px;
-            width: 100%;
-            height: 100vh;
-        }
+  /* masthead */
+  .masthead{display:flex;align-items:center;justify-content:space-between;padding:clamp(1.4rem,3vw,2.2rem) 0}
+  .mark{font-family:"IBM Plex Mono",monospace;font-size:.74rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+  .nav{display:flex;gap:clamp(1.1rem,2.5vw,2.4rem)}
+  .nav a{font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);text-decoration:none;position:relative;padding-bottom:3px;transition:color .25s ease}
+  .nav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:var(--ink);transform:scaleX(0);transform-origin:right;transition:transform .3s ease}
+  .nav a:hover{color:var(--ink)}
+  .nav a:hover::after{transform:scaleX(1);transform-origin:left}
+  .nav a:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
 
-        /* Top section divided into two columns */
-        .top {
-            display: flex;
-            flex: 1;
-        }
+  .rule{height:1px;background:var(--hair);width:100%}
 
-        /* Left: Name and description */
-        .top-left {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 2rem;
-            width: 50%;
-            background-color: #f5f5f5;
-        }
+  /* hero */
+  .hero{display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(2rem,5vw,4.5rem);align-items:center;padding:clamp(3rem,7vw,6rem) 0 clamp(2.5rem,6vw,4.5rem)}
+  .hero-eyebrow{margin-bottom:clamp(1.4rem,3.5vw,2.2rem)}
+  .name{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(3.4rem,8vw,6.6rem);line-height:.94;letter-spacing:-.01em}
+  .name em{font-style:italic;display:block}
+  .role{margin-top:clamp(1.3rem,3vw,1.9rem);font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+  .role .dot{color:var(--hair-strong);margin:0 .5em}
+  .hero-lead{margin-top:clamp(1.3rem,3vw,1.8rem);max-width:38ch;font-size:1.06rem;color:#3c3930;line-height:1.6}
+  .hero-aside{margin-top:1.1rem;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--hair-strong)}
 
-        h1 {
-            font-size: 3rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
+  .portrait{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:var(--r);background:var(--frame)}
+  .portrait img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;filter:grayscale(.12) contrast(1.02)}
+  .portrait .tag{position:absolute;left:14px;bottom:12px;font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.18em;color:#fff;mix-blend-mode:difference;text-transform:uppercase}
 
-        p {
-            font-size: 1.1rem;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-        }
+  /* profile */
+  .profile{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2rem,5vw,4.5rem);padding:clamp(3rem,6vw,5rem) 0}
+  .profile-head{margin-bottom:1.6rem}
+  .profile-body p{max-width:46ch;font-size:1.04rem;line-height:1.68;color:#3c3930;margin-bottom:1.1rem}
+  .profile-body p:last-child{margin-bottom:0}
 
-        /* Profile photo styling */
-        .profile-photo {
-            width: 140px;
-            height: 180px;
-            border-radius: 8px;
-            object-fit: cover;
-            object-position: center top;
-            border: 3px solid #ffffff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
+  .facts{display:flex;flex-direction:column;gap:1.5rem}
+  .fact{border-top:1px solid var(--hair);padding-top:1rem}
+  .fact .label{display:block;margin-bottom:.7rem}
+  .fact ul{list-style:none}
+  .fact li{font-size:.97rem;line-height:1.5;color:#2c2a23;padding:.18rem 0}
+  .fact li span{color:var(--soft);font-size:.86rem}
+  .tags{display:flex;flex-wrap:wrap;gap:.45rem}
+  .tags span{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.06em;color:#2c2a23;border:1px solid var(--hair-strong);border-radius:999px;padding:.28rem .7rem;text-transform:lowercase}
 
-        /* Right: Links */
-        .top-right {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 2rem;
-            width: 50%;
-            background-color: #eaeaea;
-        }
+  /* gallery */
+  .gallery-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:clamp(2.2rem,4vw,3.2rem) 0 clamp(1.4rem,3vw,2rem)}
+  .gallery-title{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(1.7rem,4vw,2.5rem);line-height:1;letter-spacing:-.01em}
+  .gallery-title em{font-style:italic}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.5rem,1.2vw,.9rem);padding-bottom:clamp(3rem,6vw,5rem)}
+  .cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:var(--r);background:var(--frame);cursor:pointer;border:none;padding:0;width:100%}
+  .cell img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.04) contrast(1.02);transition:transform .7s cubic-bezier(.2,.7,.2,1),filter .5s ease}
+  .cell .num{position:absolute;top:9px;left:11px;font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.14em;color:#fff;mix-blend-mode:difference;opacity:.85;z-index:2}
+  .cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.22));opacity:0;transition:opacity .4s ease}
+  .cell:hover::after,.cell:focus-visible::after{opacity:1}
+  .cell:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
-        .links {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+  /* footer */
+  .colophon{display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;padding:clamp(2.2rem,5vw,3.4rem) 0 clamp(2.6rem,6vw,4rem);border-top:1px solid var(--hair)}
+  .who{display:flex;align-items:center;gap:1.1rem}
+  .who img{width:54px;height:54px;border-radius:50%;object-fit:cover;object-position:center top;filter:grayscale(.15)}
+  .who .nm{font-family:"Instrument Serif",serif;font-size:1.45rem;line-height:1}
+  .who .sub{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-top:.35rem}
+  .clock{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);display:flex;align-items:center;gap:.6rem}
+  .clock .pulse{width:6px;height:6px;border-radius:50%;background:var(--ink);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
 
-        /* Links in black */
-        .links a {
-            text-decoration: none;
-            color: #000000;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
+  /* lightbox */
+  .lb{position:fixed;inset:0;z-index:50;background:rgba(20,19,15,.94);display:none;align-items:center;justify-content:center;padding:clamp(1rem,4vw,3rem)}
+  .lb.open{display:flex}
+  .lb img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:var(--r)}
+  .lb-close,.lb-nav{position:absolute;background:none;border:none;color:#EFEEEA;cursor:pointer;font-family:"IBM Plex Mono",monospace;letter-spacing:.1em}
+  .lb-close{top:clamp(1rem,3vw,2rem);right:clamp(1rem,3vw,2rem);font-size:.78rem;text-transform:uppercase}
+  .lb-nav{top:50%;transform:translateY(-50%);font-size:1.6rem;padding:.6rem;opacity:.7;transition:opacity .2s}
+  .lb-nav:hover{opacity:1}
+  .lb-prev{left:clamp(.5rem,2vw,1.5rem)}
+  .lb-next{right:clamp(.5rem,2vw,1.5rem)}
+  .lb-meta{position:absolute;bottom:clamp(1rem,3vw,2rem);left:0;right:0;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.2em;color:#9a968c;text-transform:uppercase}
 
-        .links a:hover {
-            text-decoration: underline;
-        }
+  @media (prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+    .reveal.in{opacity:1;transform:none}
+    .cell:hover img{transform:scale(1.045)}
+  }
 
-        /* Bottom section with image slider and time */
-        .bottom {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            background-color: #ffffff;
-            flex: 1;
-            position: relative;
-        }
-
-        /* Slider container */
-        .slider {
-            position: relative;
-            width: 100%;
-            max-width: 1200px; /* Adjusted to fit 1 image at a time */
-            height: 400px; /* Fijamos una altura constante */
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-
-        .slides {
-            display: flex;
-            width: 100%;
-            transition: transform 0.5s ease-in-out;
-        }
-
-        .slides img {
-            width: 100%;
-            height: 100%; /* La imagen se ajusta al 100% del contenedor */
-            object-fit: cover; /* Mantiene la proporción y cubre todo el contenedor */
-        }
-
-        /* Text overlay on the slider */
-        .slider-text {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #fff;
-            font-size: 1.5rem;
-            font-weight: bold;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 0.5rem 1rem;
-        }
-
-        .time-display {
-            font-size: 1rem;
-            color: #333;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .top {
-                flex-direction: column;
-            }
-            
-            .top-left, .top-right {
-                width: 100%;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .profile-photo {
-                width: 120px;
-                height: 150px;
-            }
-        }
-    </style>
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;gap:2.2rem;padding-top:2rem}
+    .portrait{aspect-ratio:4/5;max-height:60vh;max-width:360px}
+    .profile{grid-template-columns:1fr;gap:2.4rem}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .nav{gap:1.1rem}
+  }
+  @media (max-width:480px){
+    .colophon{flex-direction:column;align-items:flex-start;gap:1.4rem}
+  }
+</style>
 </head>
-
 <body>
-    <div class="container">
-        <!-- Top section: divided into two columns -->
-        <div class="top">
-            <!-- Left column: Name and description -->
-            <div class="top-left">
-                <h1>Gonzalo Gonzalez Melo</h1>
-                <p>
-                    Welcome to my personal page. Here you can find my resume, research, portfolio and ways to get in touch.
-                </p>
-                <!-- Profile photo -->
-                <img src="foto_gg.png" alt="Foto de Gonzalo" class="profile-photo">
-            </div>
-            <!-- Right column: Links -->
-            <div class="top-right">
-                <div class="links">
-                    <a href="http://gtgonza.github.io/cv.html">Resume</a>
-                    <a href="http://gtgonza.github.io/research.html">Research</a>
-                    <a href="http://gtgonza.github.io/portfolio.html">Portfolio</a>
-                    <a href="http://gtgonza.github.io/contact.html">Contact</a>
-                </div>
-            </div>
-        </div>
+<div class="wrap">
 
-        <!-- Bottom section: Image slider and time -->
-        <div class="bottom">
-            <!-- Slider for images -->
-            <div class="slider">
-                <div class="slides">
-                    <img src="https://i.imgur.com/lOMdABx.jpg" alt="Image 1">
-                    <img src="https://i.imgur.com/4cREDRw.jpg" alt="Image 2">
-                    <img src="https://i.imgur.com/LR5Mhka.jpg" alt="Image 3">
-                    <img src="https://i.imgur.com/fiYKiVk.jpg" alt="Image 4">
-                    <img src="https://i.imgur.com/LEjIQkU.jpg" alt="Image 5">
-                    <img src="https://i.imgur.com/iZZBrV7.jpg" alt="Image 6">
-                    <img src="https://i.imgur.com/9atX6WF.jpg" alt="Image 7">
-                    <img src="https://i.imgur.com/ruqrASr.jpg" alt="Image 8">
-                    <img src="https://i.imgur.com/46Kbz4M.jpg" alt="Image 9">
-                </div>
-                <div class="slider-text">Analog photography is my hobby</div>
-            </div>
+  <header class="masthead">
+    <a href="http://gtgonza.github.io/" class="mark">GGM</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="http://gtgonza.github.io/cv.html">Resume</a>
+      <a href="http://gtgonza.github.io/research.html">Research</a>
+      <a href="http://gtgonza.github.io/portfolio.html">Portfolio</a>
+      <a href="http://gtgonza.github.io/contact.html">Contact</a>
+    </nav>
+  </header>
+  <div class="rule"></div>
 
-            <!-- Time display -->
-            <div class="time-display">
-                <a href="//24timezones.com/Santiago/time" class="clock24" id="tz24-1651261068-c1232-eyJob3VydHlwZSI6MTIsInNob3dkYXRlIjoiMCIsInNob3dzZWNvbmRzIjoiMSIsInNob3d0aW1lem9uZSI6IjEiLCJ0eXBlIjoiZCIsImxhbmciOiJlbiJ9" title="Santiago time now" target="_blank" rel="nofollow">
-                    Time in Santiago, Chile
-                </a>
-                <script type="text/javascript" src="//w.24timezones.com/l.js" async></script>
-            </div>
-        </div>
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow label">Santiago, Chile</div>
+      <h1 class="name">Gonzalo<em>González Melo</em></h1>
+      <div class="role">Applied&nbsp;Economist<span class="dot">/</span>QA&nbsp;Consultores</div>
+      <p class="hero-lead">I build the microeconomic and econometric analysis behind competition, regulation and tariff cases — usually where the numbers have to hold up in front of a regulator, a panel or a court.</p>
+      <div class="hero-aside">Off the clock — an analog photographer</div>
     </div>
+    <figure class="portrait reveal">
+      <img src="foto_gg.png" alt="Gonzalo González Melo">
+      <figcaption class="tag">Santiago</figcaption>
+    </figure>
+  </section>
 
-    <script>
-        const slides = document.querySelector('.slides');
-        const totalSlides = slides.children.length;
-        let index = 0;
-        let slideWidth = document.querySelector('.slider').offsetWidth; // Get the width of the slider
+  <div class="rule"></div>
 
-        function showNextSlide() {
-            if (index < totalSlides - 1) {
-                index++;
-                slides.style.transition = 'transform 0.5s ease-in-out';
-            } else {
-                // Pause at the last slide for 3 seconds and then go back to the first slide
-                setTimeout(() => {
-                    index = 0;
-                    slides.style.transition = 'none'; // Disable transition for instant return
-                    slides.style.transform = `translateX(-${index * slideWidth}px)`;
-                    setTimeout(() => {
-                        slides.style.transition = 'transform 0.5s ease-in-out'; // Re-enable transition
-                    }, 20); // Add a tiny delay before restoring the transition
-                }, 3000); // Wait for 3 seconds at the last slide
-            }
-            slides.style.transform = `translateX(-${index * slideWidth}px)`;
-        }
+  <section class="profile" id="profile">
+    <div class="profile-body">
+      <div class="profile-head label">Profile</div>
+      <p>I'm an analyst at QA Consultores in Santiago, working across the problems that need microeconomics and econometrics done carefully: competition policy, tariff regulation, demand estimation and tariff design, corporate finance, environmental and natural-resource economics, agricultural economics, and the social and private appraisal of projects.</p>
+      <p>My work has supported firms across energy, water utilities, telecommunications, manufacturing, road-infrastructure concessions and agribusiness — most often where the analysis has to stand up before regulators, technical panels or courts.</p>
+    </div>
+    <div class="facts">
+      <div class="fact">
+        <span class="label">Education</span>
+        <ul>
+          <li>Ingeniero Comercial, concentration in Economics <span>— PUC</span></li>
+          <li>M.A. Applied Economics (MAE) <span>— PUC</span></li>
+        </ul>
+      </div>
+      <div class="fact">
+        <span class="label">Teaching</span>
+        <ul>
+          <li>Introduction to Economics <span>— PUC</span></li>
+          <li>Statistical Methods · Introduction to Economics <span>— U. de los Andes</span></li>
+        </ul>
+      </div>
+      <div class="fact">
+        <span class="label">Focus</span>
+        <div class="tags">
+          <span>competition</span><span>tariff regulation</span><span>demand estimation</span><span>corporate finance</span><span>environmental economics</span><span>project appraisal</span>
+        </div>
+      </div>
+      <div class="fact">
+        <span class="label">Sectors</span>
+        <div class="tags">
+          <span>energy</span><span>water utilities</span><span>telecom</span><span>manufacturing</span><span>road concessions</span><span>agribusiness</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        setInterval(showNextSlide, 3000); // Change image every 3 seconds
+  <div class="rule"></div>
 
-        // Ensure the slider resizes correctly if the window size changes
-        window.addEventListener('resize', () => {
-            slideWidth = document.querySelector('.slider').offsetWidth;
-        });
-    </script> 
+  <div class="gallery-head">
+    <h2 class="gallery-title">On <em>film</em></h2>
+    <span class="label">Analog photography · Santiago</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer class="colophon">
+    <div class="who">
+      <img src="foto_gg.png" alt="Gonzalo González Melo">
+      <div>
+        <div class="nm">Gonzalo González Melo</div>
+        <div class="sub">Applied economist · Santiago</div>
+      </div>
+    </div>
+    <div class="clock"><span class="pulse"></span><span id="clock">Santiago · --:--:--</span></div>
+  </footer>
+
+</div>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photograph viewer">
+  <button class="lb-close" id="lbClose" aria-label="Close">Close ✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous">‹</button>
+  <img id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Next">›</button>
+  <div class="lb-meta" id="lbMeta"></div>
+</div>
+
+<script>
+  const photos = [
+    "https://i.imgur.com/lOMdABx.jpg","https://i.imgur.com/4cREDRw.jpg","https://i.imgur.com/LR5Mhka.jpg",
+    "https://i.imgur.com/fiYKiVk.jpg","https://i.imgur.com/LEjIQkU.jpg","https://i.imgur.com/iZZBrV7.jpg",
+    "https://i.imgur.com/9atX6WF.jpg","https://i.imgur.com/ruqrASr.jpg","https://i.imgur.com/46Kbz4M.jpg"
+  ];
+  const grid=document.getElementById('grid');
+  photos.forEach((src,i)=>{
+    const b=document.createElement('button');
+    b.className='cell reveal';
+    b.setAttribute('aria-label','Open photograph '+(i+1));
+    b.innerHTML='<span class="num">'+String(i+1).padStart(2,'0')+'</span><img src="'+src+'" alt="Analog photograph '+(i+1)+'" loading="lazy">';
+    b.addEventListener('click',()=>openLb(i));
+    grid.appendChild(b);
+  });
+  const lb=document.getElementById('lb'),lbImg=document.getElementById('lbImg'),lbMeta=document.getElementById('lbMeta');
+  let cur=0;
+  function openLb(i){cur=i;render();lb.classList.add('open');document.body.style.overflow='hidden';}
+  function closeLb(){lb.classList.remove('open');document.body.style.overflow='';}
+  function render(){lbImg.src=photos[cur];lbMeta.textContent='Frame '+String(cur+1).padStart(2,'0')+' / '+String(photos.length).padStart(2,'0')+' · 35mm';}
+  function step(d){cur=(cur+d+photos.length)%photos.length;render();}
+  document.getElementById('lbClose').onclick=closeLb;
+  document.getElementById('lbPrev').onclick=()=>step(-1);
+  document.getElementById('lbNext').onclick=()=>step(1);
+  lb.addEventListener('click',e=>{if(e.target===lb)closeLb();});
+  document.addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);});
+  const clockEl=document.getElementById('clock');
+  function tick(){const t=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());clockEl.textContent='Santiago · '+t;}
+  tick();setInterval(tick,1000);
+  const io=new IntersectionObserver((es)=>{es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
