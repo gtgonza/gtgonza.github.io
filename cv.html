@@ -1,137 +1,120 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume - Gonzalo Gonzalez Melo</title>
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <style>
-        /* Reset CSS */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        /* Main container */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-            padding: 2rem;
-        }
-        
-        /* Title */
-        h1 {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-        }
-        
-        /* PDF container */
-        .pdf-container {
-            width: 100%;
-            max-width: 900px;
-            height: 80vh;
-            border: 1px solid #eee;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* PDF embed */
-        .pdf-embed {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        /* Download link */
-        .download-link {
-            margin-top: 1rem;
-            text-align: center;
-        }
-        
-        .download-link a {
-            color: #000;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1.1rem;
-            padding: 0.5rem 1rem;
-            border: 2px solid #000;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-        
-        .download-link a:hover {
-            background-color: #000;
-            color: #fff;
-        }
-        
-        /* Bottom section */
-        .bottom {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem;
-            background-color: #ffffff;
-            border-top: 1px solid #eee;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume — Gonzalo González Melo</title>
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#EFEEEA;--ink:#17150F;--soft:#6F6B62;--hair:#D7D3CA;--hair-strong:#BCB7AC;--frame:#E7E5DF;--r:2px}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"Inter",sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+  ::selection{background:var(--ink);color:var(--paper)}
+  .wrap{max-width:1240px;margin:0 auto;width:100%;padding:0 clamp(1.25rem,4vw,3.25rem)}
 
-        /* Navigation link */
-        .nav-link {
-            text-decoration: none;
-            color: #000;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
+  .label{font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--soft)}
 
-        .nav-link:hover {
-            text-decoration: underline;
-        }
-        
-        /* Responsive design */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .pdf-container {
-                height: 70vh;
-            }
-            
-            .main-container {
-                padding: 1rem;
-            }
-        }
-    </style>
+  .masthead{display:flex;align-items:center;justify-content:space-between;padding:clamp(1.4rem,3vw,2.2rem) 0}
+  .mark{font-family:"IBM Plex Mono",monospace;font-size:.74rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+  .nav{display:flex;gap:clamp(1.1rem,2.5vw,2.4rem)}
+  .nav a{font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);text-decoration:none;position:relative;padding-bottom:3px;transition:color .25s ease}
+  .nav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:var(--ink);transform:scaleX(0);transform-origin:right;transition:transform .3s ease}
+  .nav a:hover,.nav a[aria-current]{color:var(--ink)}
+  .nav a[aria-current]::after,.nav a:hover::after{transform:scaleX(1);transform-origin:left}
+  .nav a:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+
+  .rule{height:1px;background:var(--hair);width:100%}
+
+  main{flex:1;padding:clamp(2.6rem,5vw,4rem) 0}
+  .cv-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;margin-bottom:clamp(1.6rem,3.5vw,2.4rem)}
+  .cv-eyebrow{margin-bottom:.9rem}
+  .cv-title{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(2.4rem,6vw,4rem);line-height:.98;letter-spacing:-.01em}
+  .cv-title em{font-style:italic}
+
+  .cv-actions{display:flex;gap:.7rem;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;border-radius:999px;padding:.6rem 1.1rem;transition:background .3s ease,color .3s ease,border-color .3s ease}
+  .btn-solid{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}
+  .btn-solid:hover{background:transparent;color:var(--ink)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--hair-strong)}
+  .btn-ghost:hover{border-color:var(--ink)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+  .viewer{width:100%;height:clamp(420px,78vh,1000px);border:1px solid var(--hair-strong);border-radius:var(--r);background:var(--frame);overflow:hidden}
+  .viewer iframe{width:100%;height:100%;border:none;display:block;background:#fff}
+  .fallback{margin-top:1rem;font-size:.95rem;color:var(--soft)}
+  .fallback a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+  .colophon{display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;padding:clamp(2.2rem,5vw,3.4rem) 0 clamp(2.6rem,6vw,4rem);border-top:1px solid var(--hair);margin-top:clamp(2.4rem,5vw,3.4rem)}
+  .who{display:flex;align-items:center;gap:1.1rem}
+  .who img{width:54px;height:54px;border-radius:50%;object-fit:cover;object-position:center top;filter:grayscale(.15)}
+  .who .nm{font-family:"Instrument Serif",serif;font-size:1.45rem;line-height:1}
+  .who .sub{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-top:.35rem}
+  .sig{font-family:"Instrument Serif",serif;font-style:italic;font-size:1rem;color:var(--soft);text-align:center;line-height:1.4}
+  .sig cite{display:block;font-family:"IBM Plex Mono",monospace;font-style:normal;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--hair-strong);margin-top:.35rem}
+  .clock{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);display:flex;align-items:center;gap:.6rem}
+  .clock .pulse{width:6px;height:6px;border-radius:50%;background:var(--ink);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+
+  @media (max-width:600px){
+    .cv-head{align-items:flex-start}
+    .colophon{flex-direction:column;align-items:flex-start;gap:1.4rem}
+  }
+</style>
 </head>
 <body>
-    <div class="main-container">
-        <h1>Resume</h1>
-        
-        <div class="pdf-container">
-            <embed src="CV.pdf" type="application/pdf" class="pdf-embed">
-            <p>If the PDF doesn't display, <a href="CV.pdf" target="_blank">click here to view it</a>.</p>
-        </div>
+<div class="wrap">
+
+  <header class="masthead">
+    <a href="index.html" class="mark">GGM</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="cv.html" aria-current="page">Resume</a>
+      <a href="research.html">Research</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+  <div class="rule"></div>
+
+  <main>
+    <div class="cv-head">
+      <div>
+        <div class="cv-eyebrow label">Resume</div>
+        <h1 class="cv-title">Curriculum <em>vitae</em></h1>
+      </div>
+      <div class="cv-actions">
+        <a class="btn btn-solid" href="CV.pdf" download>Download PDF ↓</a>
+        <a class="btn btn-ghost" href="CV.pdf" target="_blank" rel="noopener">Open in new tab ↗</a>
+      </div>
     </div>
-    
-    <!-- Bottom section -->
-    <div class="bottom">
-        <a href="index.html" class="nav-link">← Back to Home</a>
+
+    <div class="viewer">
+      <iframe src="CV.pdf#view=FitH" title="Resume — Gonzalo González Melo"></iframe>
     </div>
+    <p class="fallback">If the document doesn't load here, <a href="CV.pdf" target="_blank" rel="noopener">open it in a new tab</a>.</p>
+  </main>
+
+  <footer class="colophon">
+    <div class="who">
+      <img src="foto_gg.png" alt="Gonzalo González Melo">
+      <div>
+        <div class="nm">Gonzalo González Melo</div>
+        <div class="sub">Applied economist · Santiago</div>
+      </div>
+    </div>
+    <div class="sig">Honest scales and balances are the Lord's.<cite>Proverbs 16:11</cite></div>
+    <div class="clock"><span class="pulse"></span><span id="clock">Santiago · --:--:--</span></div>
+  </footer>
+
+</div>
+
+<script>
+  const clockEl=document.getElementById('clock');
+  function tick(){const t=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());clockEl.textContent='Santiago · '+t;}
+  tick();setInterval(tick,1000);
+</script>
 </body>
 </html>
