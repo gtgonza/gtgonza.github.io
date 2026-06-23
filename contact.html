@@ -1,105 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact - Gonzalo Gonzalez Melo</title>
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <style>
-        /* Reset CSS */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #ffffff;
-            color: #000000;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        /* Main container for centering content */
-        .main-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-        }
-        
-        /* Main container for the content */
-        .container {
-            text-align: center;
-            padding: 2rem;
-            border-left: 4px solid #000; /* Swiss design detail */
-            max-width: 600px;
-        }
-        h1 {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 2rem;
-        }
-        p {
-            font-size: 1.2rem;
-            line-height: 2;
-        }
-        i {
-            font-style: italic;
-        }
-        /* Links */
-        a {
-            color: #000;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Bottom section */
-        .bottom {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem;
-            background-color: #ffffff;
-            border-top: 1px solid #eee;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Gonzalo González Melo</title>
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#EFEEEA;--ink:#17150F;--soft:#6F6B62;--hair:#D7D3CA;--hair-strong:#BCB7AC;--frame:#E7E5DF;--r:2px}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"Inter",sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+  ::selection{background:var(--ink);color:var(--paper)}
+  .wrap{max-width:1240px;margin:0 auto;width:100%;padding:0 clamp(1.25rem,4vw,3.25rem)}
 
-        /* Navigation link */
-        .nav-link {
-            text-decoration: none;
-            color: #000;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
+  .label{font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--soft)}
 
-        .nav-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+  .masthead{display:flex;align-items:center;justify-content:space-between;padding:clamp(1.4rem,3vw,2.2rem) 0}
+  .mark{font-family:"IBM Plex Mono",monospace;font-size:.74rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+  .nav{display:flex;gap:clamp(1.1rem,2.5vw,2.4rem)}
+  .nav a{font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);text-decoration:none;position:relative;padding-bottom:3px;transition:color .25s ease}
+  .nav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:var(--ink);transform:scaleX(0);transform-origin:right;transition:transform .3s ease}
+  .nav a:hover,.nav a[aria-current]{color:var(--ink)}
+  .nav a[aria-current]::after,.nav a:hover::after{transform:scaleX(1);transform-origin:left}
+  .nav a:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+
+  .rule{height:1px;background:var(--hair);width:100%}
+
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:clamp(3rem,9vw,7rem) 0}
+  .contact-eyebrow{margin-bottom:clamp(1.4rem,3.5vw,2rem)}
+  .contact-title{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(3rem,8vw,6rem);line-height:.96;letter-spacing:-.01em;margin-bottom:clamp(2.4rem,5vw,3.6rem)}
+  .contact-title em{font-style:italic;display:block}
+
+  .channels{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+  .channel{display:flex;align-items:baseline;gap:clamp(1rem,4vw,3rem);padding:clamp(1.2rem,2.6vw,1.7rem) 0;border-bottom:1px solid var(--hair);text-decoration:none;color:var(--ink);position:relative}
+  .channel .ch-label{flex:0 0 auto;min-width:7.5rem;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);padding-top:.4rem}
+  .channel .ch-value{font-family:"Instrument Serif",serif;font-size:clamp(1.5rem,4vw,2.2rem);line-height:1.1;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  .channel .ch-arrow{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:1.2rem;color:var(--hair-strong);transition:transform .35s ease,color .35s ease;align-self:center}
+  a.channel:hover .ch-value{transform:translateX(8px)}
+  a.channel:hover .ch-arrow{transform:translate(4px,-4px);color:var(--ink)}
+  a.channel:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+
+  .based{margin-top:clamp(2rem,4vw,2.8rem);font-size:1.02rem;color:#3c3930}
+
+  .colophon{display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;padding:clamp(2.2rem,5vw,3.4rem) 0 clamp(2.6rem,6vw,4rem);border-top:1px solid var(--hair)}
+  .who{display:flex;align-items:center;gap:1.1rem}
+  .who img{width:54px;height:54px;border-radius:50%;object-fit:cover;object-position:center top;filter:grayscale(.15)}
+  .who .nm{font-family:"Instrument Serif",serif;font-size:1.45rem;line-height:1}
+  .who .sub{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-top:.35rem}
+  .sig{font-family:"Instrument Serif",serif;font-style:italic;font-size:1rem;color:var(--soft);text-align:center;line-height:1.4}
+  .sig cite{display:block;font-family:"IBM Plex Mono",monospace;font-style:normal;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--hair-strong);margin-top:.35rem}
+  .clock{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);display:flex;align-items:center;gap:.6rem}
+  .clock .pulse{width:6px;height:6px;border-radius:50%;background:var(--ink);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+
+  @media (prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+    .reveal.in{opacity:1;transform:none}
+  }
+  @media (max-width:600px){
+    .channel{flex-wrap:wrap;gap:.3rem}
+    .channel .ch-label{min-width:100%;padding-top:0}
+    .channel .ch-arrow{display:none}
+    .colophon{flex-direction:column;align-items:flex-start;gap:1.4rem}
+  }
+</style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="container">
-            <h1>Contact</h1>
-            <p>
-                E-mail:<br>
-                <i>gtgonzalez@uc.cl</i><br><br>
-                LinkedIn:<br>
-                <a href="https://linkedin.com/in/gtgonzalez" target="_blank"><i>https://linkedin.com/in/gtgonzalez</i></a>
-            </p>
-        </div>
+<div class="wrap">
+
+  <header class="masthead">
+    <a href="index.html" class="mark">GGM</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="cv.html">Resume</a>
+      <a href="research.html">Research</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="contact.html" aria-current="page">Contact</a>
+    </nav>
+  </header>
+  <div class="rule"></div>
+
+  <main>
+    <div class="contact-eyebrow label">Contact</div>
+    <h1 class="contact-title reveal">Get in <em>touch</em></h1>
+
+    <div class="channels reveal">
+      <a class="channel" href="mailto:gtgonzalez@uc.cl">
+        <span class="ch-label">E-mail</span>
+        <span class="ch-value">gtgonzalez@uc.cl</span>
+        <span class="ch-arrow">↗</span>
+      </a>
+      <a class="channel" href="https://linkedin.com/in/gtgonzalez" target="_blank" rel="noopener">
+        <span class="ch-label">LinkedIn</span>
+        <span class="ch-value">/in/gtgonzalez</span>
+        <span class="ch-arrow">↗</span>
+      </a>
     </div>
-    
-    <!-- Bottom section -->
-    <div class="bottom">
-        <a href="index.html" class="nav-link">← Back to Home</a>
+
+    <p class="based">Based in Santiago, Chile. Usually quickest to reach by e-mail.</p>
+  </main>
+
+  <footer class="colophon">
+    <div class="who">
+      <img src="foto_gg.png" alt="Gonzalo González Melo">
+      <div>
+        <div class="nm">Gonzalo González Melo</div>
+        <div class="sub">Applied economist · Santiago</div>
+      </div>
     </div>
+    <div class="sig">Honest scales and balances are the Lord's.<cite>Proverbs 16:11</cite></div>
+    <div class="clock"><span class="pulse"></span><span id="clock">Santiago · --:--:--</span></div>
+  </footer>
+
+</div>
+
+<script>
+  const clockEl=document.getElementById('clock');
+  function tick(){const t=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());clockEl.textContent='Santiago · '+t;}
+  tick();setInterval(tick,1000);
+  const io=new IntersectionObserver((es)=>{es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
