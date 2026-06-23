@@ -35,6 +35,9 @@
   .io-title em{font-style:italic}
   .io-sub{font-size:1.05rem;color:#3c3930;max-width:60ch;line-height:1.6}
   .io-sub strong{font-weight:600}
+  .io-source{margin-top:.9rem;font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.08em;color:var(--soft)}
+  .io-source a{color:var(--soft);text-decoration:none;border-bottom:1px solid var(--hair-strong);padding-bottom:1px;transition:color .25s ease,border-color .25s ease}
+  .io-source a:hover{color:var(--ink);border-color:var(--ink)}
 
   .legend{display:flex;gap:clamp(1.2rem,3vw,2.4rem);margin:clamp(1.8rem,4vw,2.4rem) 0 1.4rem;flex-wrap:wrap}
   .legend-item{display:flex;align-items:center;gap:.55rem;font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
@@ -100,7 +103,8 @@
   <main>
     <div class="crumb label"><a href="portfolio.html">← Portfolio</a></div>
     <h1 class="io-title">Chile Input–Output <em>Matrix</em></h1>
-    <p class="io-sub">Chile's <strong>111 economic sectors</strong> according to the Central Bank. Each square is a sector, with its value added and share of GDP in 2022. Hover to read a sector; click one to compare it against the other 110.</p>
+    <p class="io-sub">Chile's <strong>111 economic sectors</strong> according to the Central Bank. Each square is a sector, with its value added and share of GDP in 2023. Hover to read a sector; click one to compare it against the other 110.</p>
+    <p class="io-source"><a href="https://www.bcentral.cl/en/areas/statistics/matriz-insumo-producto/cuadros-mip-excel" target="_blank" rel="noopener">Source · Central Bank of Chile — Input–Output Tables ↗</a></p>
 
     <div class="legend">
       <div class="legend-item"><span class="legend-color selected"></span>Selected sector</div>
@@ -114,7 +118,7 @@
 
     <div class="stats">
       <div class="stat-card"><div class="stat-number">111</div><div class="stat-label">Economic sectors</div></div>
-      <div class="stat-card"><div class="stat-number">2022</div><div class="stat-label">Base year</div></div>
+      <div class="stat-card"><div class="stat-number">2023</div><div class="stat-label">Base year</div></div>
       <div class="stat-card"><div class="stat-number">BCCh</div><div class="stat-label">Central Bank of Chile</div></div>
     </div>
 
@@ -148,117 +152,117 @@
 
 <script>
   const sectors = [
-    { name: "Annual crops (cereals and others) and forage", code: "01", valorAgregado: "499", pibPercent: "0.21%", mayorSCC: 1 },
-    { name: "Vegetable growing and nursery products", code: "02", valorAgregado: "562", pibPercent: "0.24%", mayorSCC: 1 },
-    { name: "Grape cultivation", code: "03", valorAgregado: "271", pibPercent: "0.11%", mayorSCC: 1 },
-    { name: "Other fruit cultivation", code: "04", valorAgregado: "2.130", pibPercent: "0.90%", mayorSCC: 0 },
-    { name: "Cattle raising", code: "05", valorAgregado: "684", pibPercent: "0.29%", mayorSCC: 0 },
-    { name: "Pig farming", code: "06", valorAgregado: "112", pibPercent: "0.05%", mayorSCC: 1 },
-    { name: "Poultry farming", code: "07", valorAgregado: "489", pibPercent: "0.21%", mayorSCC: 1 },
-    { name: "Other animal breeding", code: "08", valorAgregado: "48", pibPercent: "0.02%", mayorSCC: 1 },
-    { name: "Support activities for agriculture and livestock", code: "09", valorAgregado: "1.145", pibPercent: "0.49%", mayorSCC: 0 },
-    { name: "Forestry and logging", code: "10", valorAgregado: "988", pibPercent: "0.42%", mayorSCC: 0 },
-    { name: "Aquaculture", code: "11", valorAgregado: "1.020", pibPercent: "0.43%", mayorSCC: 0 },
-    { name: "Fishing", code: "12", valorAgregado: "559", pibPercent: "0.24%", mayorSCC: 1 },
-    { name: "Coal mining", code: "13", valorAgregado: "1", pibPercent: "0.00%", mayorSCC: 1 },
-    { name: "Oil and natural gas extraction", code: "14", valorAgregado: "157", pibPercent: "0.07%", mayorSCC: 1 },
-    { name: "Copper mining", code: "15", valorAgregado: "25.428", pibPercent: "10.78%", mayorSCC: 0 },
-    { name: "Iron ore mining", code: "16", valorAgregado: "916", pibPercent: "0.39%", mayorSCC: 0 },
-    { name: "Other non-ferrous metal ore mining", code: "17", valorAgregado: "475", pibPercent: "0.20%", mayorSCC: 1 },
-    { name: "Other mining and mining support services", code: "18", valorAgregado: "8.199", pibPercent: "3.48%", mayorSCC: 0 },
-    { name: "Meat processing and preservation", code: "19", valorAgregado: "661", pibPercent: "0.28%", mayorSCC: 0 },
-    { name: "Fishmeal and fish oil production", code: "20", valorAgregado: "471", pibPercent: "0.20%", mayorSCC: 1 },
-    { name: "Fish and seafood processing and preservation", code: "21", valorAgregado: "1.467", pibPercent: "0.62%", mayorSCC: 0 },
-    { name: "Fruit and vegetable processing and preservation", code: "22", valorAgregado: "947", pibPercent: "0.40%", mayorSCC: 0 },
-    { name: "Vegetable oil production", code: "23", valorAgregado: "109", pibPercent: "0.05%", mayorSCC: 1 },
-    { name: "Dairy product manufacturing", code: "24", valorAgregado: "498", pibPercent: "0.21%", mayorSCC: 1 },
-    { name: "Grain mill products", code: "25", valorAgregado: "338", pibPercent: "0.14%", mayorSCC: 1 },
-    { name: "Animal feed manufacturing", code: "26", valorAgregado: "1.272", pibPercent: "0.54%", mayorSCC: 0 },
-    { name: "Bakery products", code: "27", valorAgregado: "884", pibPercent: "0.37%", mayorSCC: 0 },
-    { name: "Pasta and noodle manufacturing", code: "28", valorAgregado: "108", pibPercent: "0.05%", mayorSCC: 1 },
-    { name: "Other food product manufacturing", code: "29", valorAgregado: "573", pibPercent: "0.24%", mayorSCC: 1 },
-    { name: "Pisco and liquor production", code: "30", valorAgregado: "21", pibPercent: "0.01%", mayorSCC: 1 },
-    { name: "Wine production", code: "31", valorAgregado: "977", pibPercent: "0.41%", mayorSCC: 0 },
-    { name: "Beer production", code: "32", valorAgregado: "143", pibPercent: "0.06%", mayorSCC: 1 },
-    { name: "Non-alcoholic beverage manufacturing", code: "33", valorAgregado: "684", pibPercent: "0.29%", mayorSCC: 0 },
-    { name: "Tobacco product manufacturing", code: "34", valorAgregado: "24", pibPercent: "0.01%", mayorSCC: 1 },
-    { name: "Textile manufacturing", code: "35", valorAgregado: "95", pibPercent: "0.04%", mayorSCC: 1 },
-    { name: "Apparel manufacturing", code: "36", valorAgregado: "47", pibPercent: "0.02%", mayorSCC: 1 },
-    { name: "Leather and related products", code: "37", valorAgregado: "16", pibPercent: "0.01%", mayorSCC: 1 },
-    { name: "Footwear manufacturing", code: "38", valorAgregado: "25", pibPercent: "0.01%", mayorSCC: 1 },
-    { name: "Sawmilling and wood planing", code: "39", valorAgregado: "639", pibPercent: "0.27%", mayorSCC: 0 },
-    { name: "Wood product manufacturing", code: "40", valorAgregado: "1.025", pibPercent: "0.43%", mayorSCC: 0 },
-    { name: "Pulp manufacturing", code: "41", valorAgregado: "1.091", pibPercent: "0.46%", mayorSCC: 0 },
-    { name: "Paper and cardboard container manufacturing", code: "42", valorAgregado: "316", pibPercent: "0.13%", mayorSCC: 1 },
-    { name: "Other paper and cardboard product manufacturing", code: "43", valorAgregado: "120", pibPercent: "0.05%", mayorSCC: 1 },
-    { name: "Printing services", code: "44", valorAgregado: "354", pibPercent: "0.15%", mayorSCC: 1 },
-    { name: "Petroleum refining", code: "45", valorAgregado: "1.612", pibPercent: "0.68%", mayorSCC: 0 },
-    { name: "Basic chemical manufacturing", code: "46", valorAgregado: "2.295", pibPercent: "0.97%", mayorSCC: 0 },
-    { name: "Paint and coating manufacturing", code: "47", valorAgregado: "92", pibPercent: "0.04%", mayorSCC: 1 },
-    { name: "Pharmaceutical manufacturing", code: "48", valorAgregado: "760", pibPercent: "0.32%", mayorSCC: 0 },
-    { name: "Soap and cosmetic manufacturing", code: "49", valorAgregado: "60", pibPercent: "0.03%", mayorSCC: 1 },
-    { name: "Other chemical product manufacturing", code: "50", valorAgregado: "81", pibPercent: "0.03%", mayorSCC: 1 },
-    { name: "Rubber product manufacturing", code: "51", valorAgregado: "147", pibPercent: "0.06%", mayorSCC: 1 },
-    { name: "Plastic product manufacturing", code: "52", valorAgregado: "709", pibPercent: "0.30%", mayorSCC: 0 },
-    { name: "Glass and glass product manufacturing", code: "53", valorAgregado: "133", pibPercent: "0.06%", mayorSCC: 1 },
-    { name: "Cement, lime and gypsum manufacturing", code: "54", valorAgregado: "169", pibPercent: "0.07%", mayorSCC: 1 },
-    { name: "Concrete and other non-metallic mineral products", code: "55", valorAgregado: "519", pibPercent: "0.22%", mayorSCC: 1 },
-    { name: "Iron and steel manufacturing", code: "56", valorAgregado: "499", pibPercent: "0.21%", mayorSCC: 1 },
-    { name: "Non-ferrous metal manufacturing", code: "57", valorAgregado: "136", pibPercent: "0.06%", mayorSCC: 1 },
-    { name: "Fabricated metal product manufacturing", code: "58", valorAgregado: "1.735", pibPercent: "0.74%", mayorSCC: 0 },
-    { name: "Industrial and domestic machinery manufacturing", code: "59", valorAgregado: "768", pibPercent: "0.33%", mayorSCC: 0 },
-    { name: "Electrical and electronic equipment manufacturing", code: "60", valorAgregado: "476", pibPercent: "0.20%", mayorSCC: 1 },
-    { name: "Transportation equipment manufacturing", code: "61", valorAgregado: "225", pibPercent: "0.10%", mayorSCC: 1 },
-    { name: "Furniture manufacturing", code: "62", valorAgregado: "173", pibPercent: "0.07%", mayorSCC: 1 },
-    { name: "Machinery repair and other manufacturing", code: "63", valorAgregado: "1.433", pibPercent: "0.61%", mayorSCC: 0 },
-    { name: "Electricity generation", code: "64", valorAgregado: "1.518", pibPercent: "0.64%", mayorSCC: 0 },
-    { name: "Electricity transmission", code: "65", valorAgregado: "928", pibPercent: "0.39%", mayorSCC: 0 },
-    { name: "Electricity distribution", code: "66", valorAgregado: "891", pibPercent: "0.38%", mayorSCC: 0 },
-    { name: "Gas and steam supply", code: "67", valorAgregado: "716", pibPercent: "0.30%", mayorSCC: 0 },
-    { name: "Water supply", code: "68", valorAgregado: "1.307", pibPercent: "0.55%", mayorSCC: 0 },
-    { name: "Waste management and recycling", code: "69", valorAgregado: "748", pibPercent: "0.32%", mayorSCC: 0 },
-    { name: "Residential building construction", code: "70", valorAgregado: "3.177", pibPercent: "1.35%", mayorSCC: 0 },
-    { name: "Non-residential building construction", code: "71", valorAgregado: "1.118", pibPercent: "0.47%", mayorSCC: 0 },
-    { name: "Civil engineering construction", code: "72", valorAgregado: "5.202", pibPercent: "2.21%", mayorSCC: 0 },
-    { name: "Specialized construction activities", code: "73", valorAgregado: "5.931", pibPercent: "2.52%", mayorSCC: 0 },
-    { name: "Automotive trade", code: "74", valorAgregado: "3.169", pibPercent: "1.34%", mayorSCC: 0 },
-    { name: "Wholesale trade", code: "75", valorAgregado: "10.958", pibPercent: "4.65%", mayorSCC: 0 },
-    { name: "Retail trade", code: "76", valorAgregado: "9.873", pibPercent: "4.19%", mayorSCC: 0 },
-    { name: "Hotels", code: "77", valorAgregado: "794", pibPercent: "0.34%", mayorSCC: 0 },
-    { name: "Restaurants", code: "78", valorAgregado: "3.691", pibPercent: "1.57%", mayorSCC: 0 },
-    { name: "Railway transport", code: "79", valorAgregado: "107", pibPercent: "0.05%", mayorSCC: 1 },
-    { name: "Other land passenger transport", code: "80", valorAgregado: "1.275", pibPercent: "0.54%", mayorSCC: 0 },
-    { name: "Freight transport by road", code: "81", valorAgregado: "3.852", pibPercent: "1.63%", mayorSCC: 0 },
-    { name: "Pipeline transport", code: "82", valorAgregado: "137", pibPercent: "0.06%", mayorSCC: 1 },
-    { name: "Water transport", code: "83", valorAgregado: "455", pibPercent: "0.19%", mayorSCC: 1 },
-    { name: "Air transport", code: "84", valorAgregado: "822", pibPercent: "0.35%", mayorSCC: 0 },
-    { name: "Warehousing and storage", code: "85", valorAgregado: "936", pibPercent: "0.40%", mayorSCC: 0 },
-    { name: "Support activities for land transport", code: "86", valorAgregado: "1.699", pibPercent: "0.72%", mayorSCC: 0 },
-    { name: "Other transport support activities", code: "87", valorAgregado: "2.762", pibPercent: "1.17%", mayorSCC: 0 },
-    { name: "Postal and courier services", code: "88", valorAgregado: "437", pibPercent: "0.19%", mayorSCC: 1 },
-    { name: "Mobile telecommunications", code: "89", valorAgregado: "507", pibPercent: "0.22%", mayorSCC: 1 },
-    { name: "Fixed-line and long-distance telecommunications", code: "90", valorAgregado: "617", pibPercent: "0.26%", mayorSCC: 0 },
-    { name: "Other telecommunications activities", code: "91", valorAgregado: "919", pibPercent: "0.39%", mayorSCC: 0 },
-    { name: "Computer and information services", code: "92", valorAgregado: "4.130", pibPercent: "1.75%", mayorSCC: 0 },
-    { name: "Publishing, broadcasting and content production", code: "93", valorAgregado: "673", pibPercent: "0.29%", mayorSCC: 0 },
-    { name: "Financial intermediation", code: "94", valorAgregado: "5.001", pibPercent: "2.12%", mayorSCC: 0 },
-    { name: "Insurance and reinsurance", code: "95", valorAgregado: "834", pibPercent: "0.35%", mayorSCC: 0 },
-    { name: "Financial auxiliaries", code: "96", valorAgregado: "2.844", pibPercent: "1.21%", mayorSCC: 0 },
-    { name: "Real estate activities", code: "97", valorAgregado: "5.212", pibPercent: "2.21%", mayorSCC: 0 },
-    { name: "Housing services", code: "98", valorAgregado: "15.539", pibPercent: "6.59%", mayorSCC: 0 },
-    { name: "Legal and accounting services", code: "99", valorAgregado: "2.834", pibPercent: "1.20%", mayorSCC: 0 },
-    { name: "Architectural and engineering services", code: "100", valorAgregado: "5.978", pibPercent: "2.53%", mayorSCC: 0 },
-    { name: "Other professional, scientific and technical services", code: "101", valorAgregado: "6.379", pibPercent: "2.70%", mayorSCC: 0 },
-    { name: "Rental and leasing activities", code: "102", valorAgregado: "2.525", pibPercent: "1.07%", mayorSCC: 0 },
-    { name: "Administrative and support services", code: "103", valorAgregado: "7.357", pibPercent: "3.12%", mayorSCC: 0 },
-    { name: "Public administration", code: "104", valorAgregado: "11.638", pibPercent: "4.94%", mayorSCC: 0 },
-    { name: "Public education", code: "105", valorAgregado: "7.819", pibPercent: "3.32%", mayorSCC: 0 },
-    { name: "Private education", code: "106", valorAgregado: "4.961", pibPercent: "2.10%", mayorSCC: 0 },
-    { name: "Public health", code: "107", valorAgregado: "7.474", pibPercent: "3.17%", mayorSCC: 0 },
-    { name: "Private health and social assistance", code: "108", valorAgregado: "7.213", pibPercent: "3.06%", mayorSCC: 0 },
-    { name: "Membership organizations", code: "109", valorAgregado: "838", pibPercent: "0.36%", mayorSCC: 0 },
-    { name: "Arts, entertainment and recreation", code: "110", valorAgregado: "1.197", pibPercent: "0.51%", mayorSCC: 0 },
-    { name: "Other personal services", code: "111", valorAgregado: "2.207", pibPercent: "0.94%", mayorSCC: 0 }
+    { name: "Annual crops (cereals and others) and forage", code: "01", valorAgregado: "843", pibPercent: "0.33%" },
+    { name: "Vegetable growing and nursery products", code: "02", valorAgregado: "633", pibPercent: "0.25%" },
+    { name: "Grape cultivation", code: "03", valorAgregado: "326", pibPercent: "0.13%" },
+    { name: "Other fruit cultivation", code: "04", valorAgregado: "2.767", pibPercent: "1.09%" },
+    { name: "Cattle raising", code: "05", valorAgregado: "720", pibPercent: "0.28%" },
+    { name: "Pig farming", code: "06", valorAgregado: "103", pibPercent: "0.04%" },
+    { name: "Poultry farming", code: "07", valorAgregado: "584", pibPercent: "0.23%" },
+    { name: "Other animal breeding", code: "08", valorAgregado: "37", pibPercent: "0.01%" },
+    { name: "Support activities for agriculture and livestock", code: "09", valorAgregado: "1.275", pibPercent: "0.50%" },
+    { name: "Forestry and logging", code: "10", valorAgregado: "1.021", pibPercent: "0.40%" },
+    { name: "Aquaculture", code: "11", valorAgregado: "633", pibPercent: "0.25%" },
+    { name: "Fishing", code: "12", valorAgregado: "624", pibPercent: "0.25%" },
+    { name: "Coal mining", code: "13", valorAgregado: "1", pibPercent: "0.00%" },
+    { name: "Oil and natural gas extraction", code: "14", valorAgregado: "127", pibPercent: "0.05%" },
+    { name: "Copper mining", code: "15", valorAgregado: "22.307", pibPercent: "8.80%" },
+    { name: "Iron ore mining", code: "16", valorAgregado: "839", pibPercent: "0.33%" },
+    { name: "Other non-ferrous metal ore mining", code: "17", valorAgregado: "575", pibPercent: "0.23%" },
+    { name: "Other mining and mining support services", code: "18", valorAgregado: "5.304", pibPercent: "2.09%" },
+    { name: "Meat processing and preservation", code: "19", valorAgregado: "629", pibPercent: "0.25%" },
+    { name: "Fishmeal and fish oil production", code: "20", valorAgregado: "654", pibPercent: "0.26%" },
+    { name: "Fish and seafood processing and preservation", code: "21", valorAgregado: "1.277", pibPercent: "0.50%" },
+    { name: "Fruit and vegetable processing and preservation", code: "22", valorAgregado: "905", pibPercent: "0.36%" },
+    { name: "Vegetable oil production", code: "23", valorAgregado: "106", pibPercent: "0.04%" },
+    { name: "Dairy product manufacturing", code: "24", valorAgregado: "745", pibPercent: "0.29%" },
+    { name: "Grain mill products", code: "25", valorAgregado: "588", pibPercent: "0.23%" },
+    { name: "Animal feed manufacturing", code: "26", valorAgregado: "1.622", pibPercent: "0.64%" },
+    { name: "Bakery products", code: "27", valorAgregado: "1.172", pibPercent: "0.46%" },
+    { name: "Pasta and noodle manufacturing", code: "28", valorAgregado: "131", pibPercent: "0.05%" },
+    { name: "Other food product manufacturing", code: "29", valorAgregado: "822", pibPercent: "0.32%" },
+    { name: "Pisco and liquor production", code: "30", valorAgregado: "33", pibPercent: "0.01%" },
+    { name: "Wine production", code: "31", valorAgregado: "948", pibPercent: "0.37%" },
+    { name: "Beer production", code: "32", valorAgregado: "384", pibPercent: "0.15%" },
+    { name: "Non-alcoholic beverage manufacturing", code: "33", valorAgregado: "930", pibPercent: "0.37%" },
+    { name: "Tobacco product manufacturing", code: "34", valorAgregado: "33", pibPercent: "0.01%" },
+    { name: "Textile manufacturing", code: "35", valorAgregado: "107", pibPercent: "0.04%" },
+    { name: "Apparel manufacturing", code: "36", valorAgregado: "109", pibPercent: "0.04%" },
+    { name: "Leather and related products", code: "37", valorAgregado: "17", pibPercent: "0.01%" },
+    { name: "Footwear manufacturing", code: "38", valorAgregado: "33", pibPercent: "0.01%" },
+    { name: "Sawmilling and wood planing", code: "39", valorAgregado: "256", pibPercent: "0.10%" },
+    { name: "Wood product manufacturing", code: "40", valorAgregado: "689", pibPercent: "0.27%" },
+    { name: "Pulp manufacturing", code: "41", valorAgregado: "521", pibPercent: "0.21%" },
+    { name: "Paper and cardboard container manufacturing", code: "42", valorAgregado: "316", pibPercent: "0.12%" },
+    { name: "Other paper and cardboard product manufacturing", code: "43", valorAgregado: "173", pibPercent: "0.07%" },
+    { name: "Printing services", code: "44", valorAgregado: "380", pibPercent: "0.15%" },
+    { name: "Petroleum refining", code: "45", valorAgregado: "1.501", pibPercent: "0.59%" },
+    { name: "Basic chemical manufacturing", code: "46", valorAgregado: "2.202", pibPercent: "0.87%" },
+    { name: "Paint and coating manufacturing", code: "47", valorAgregado: "116", pibPercent: "0.05%" },
+    { name: "Pharmaceutical manufacturing", code: "48", valorAgregado: "796", pibPercent: "0.31%" },
+    { name: "Soap and cosmetic manufacturing", code: "49", valorAgregado: "119", pibPercent: "0.05%" },
+    { name: "Other chemical product manufacturing", code: "50", valorAgregado: "489", pibPercent: "0.19%" },
+    { name: "Rubber product manufacturing", code: "51", valorAgregado: "181", pibPercent: "0.07%" },
+    { name: "Plastic product manufacturing", code: "52", valorAgregado: "643", pibPercent: "0.25%" },
+    { name: "Glass and glass product manufacturing", code: "53", valorAgregado: "178", pibPercent: "0.07%" },
+    { name: "Cement, lime and gypsum manufacturing", code: "54", valorAgregado: "222", pibPercent: "0.09%" },
+    { name: "Concrete and other non-metallic mineral products", code: "55", valorAgregado: "506", pibPercent: "0.20%" },
+    { name: "Iron and steel manufacturing", code: "56", valorAgregado: "530", pibPercent: "0.21%" },
+    { name: "Non-ferrous metal manufacturing", code: "57", valorAgregado: "188", pibPercent: "0.07%" },
+    { name: "Fabricated metal product manufacturing", code: "58", valorAgregado: "2.039", pibPercent: "0.80%" },
+    { name: "Industrial and domestic machinery manufacturing", code: "59", valorAgregado: "886", pibPercent: "0.35%" },
+    { name: "Electrical and electronic equipment manufacturing", code: "60", valorAgregado: "549", pibPercent: "0.22%" },
+    { name: "Transportation equipment manufacturing", code: "61", valorAgregado: "252", pibPercent: "0.10%" },
+    { name: "Furniture manufacturing", code: "62", valorAgregado: "241", pibPercent: "0.10%" },
+    { name: "Machinery repair and other manufacturing", code: "63", valorAgregado: "1.807", pibPercent: "0.71%" },
+    { name: "Electricity generation", code: "64", valorAgregado: "3.440", pibPercent: "1.36%" },
+    { name: "Electricity transmission", code: "65", valorAgregado: "1.017", pibPercent: "0.40%" },
+    { name: "Electricity distribution", code: "66", valorAgregado: "951", pibPercent: "0.38%" },
+    { name: "Gas and steam supply", code: "67", valorAgregado: "834", pibPercent: "0.33%" },
+    { name: "Water supply", code: "68", valorAgregado: "1.427", pibPercent: "0.56%" },
+    { name: "Waste management and recycling", code: "69", valorAgregado: "869", pibPercent: "0.34%" },
+    { name: "Residential building construction", code: "70", valorAgregado: "3.435", pibPercent: "1.36%" },
+    { name: "Non-residential building construction", code: "71", valorAgregado: "1.444", pibPercent: "0.57%" },
+    { name: "Civil engineering construction", code: "72", valorAgregado: "5.610", pibPercent: "2.21%" },
+    { name: "Specialized construction activities", code: "73", valorAgregado: "6.601", pibPercent: "2.60%" },
+    { name: "Automotive trade", code: "74", valorAgregado: "3.453", pibPercent: "1.36%" },
+    { name: "Wholesale trade", code: "75", valorAgregado: "11.934", pibPercent: "4.71%" },
+    { name: "Retail trade", code: "76", valorAgregado: "10.470", pibPercent: "4.13%" },
+    { name: "Hotels", code: "77", valorAgregado: "958", pibPercent: "0.38%" },
+    { name: "Restaurants", code: "78", valorAgregado: "4.642", pibPercent: "1.83%" },
+    { name: "Railway transport", code: "79", valorAgregado: "144", pibPercent: "0.06%" },
+    { name: "Other land passenger transport", code: "80", valorAgregado: "1.678", pibPercent: "0.66%" },
+    { name: "Freight transport by road", code: "81", valorAgregado: "4.591", pibPercent: "1.81%" },
+    { name: "Pipeline transport", code: "82", valorAgregado: "151", pibPercent: "0.06%" },
+    { name: "Water transport", code: "83", valorAgregado: "489", pibPercent: "0.19%" },
+    { name: "Air transport", code: "84", valorAgregado: "2.200", pibPercent: "0.87%" },
+    { name: "Warehousing and storage", code: "85", valorAgregado: "933", pibPercent: "0.37%" },
+    { name: "Support activities for land transport", code: "86", valorAgregado: "1.874", pibPercent: "0.74%" },
+    { name: "Other transport support activities", code: "87", valorAgregado: "2.389", pibPercent: "0.94%" },
+    { name: "Postal and courier services", code: "88", valorAgregado: "477", pibPercent: "0.19%" },
+    { name: "Mobile telecommunications", code: "89", valorAgregado: "377", pibPercent: "0.15%" },
+    { name: "Fixed-line and long-distance telecommunications", code: "90", valorAgregado: "610", pibPercent: "0.24%" },
+    { name: "Other telecommunications activities", code: "91", valorAgregado: "966", pibPercent: "0.38%" },
+    { name: "Computer and information services", code: "92", valorAgregado: "4.672", pibPercent: "1.84%" },
+    { name: "Publishing, broadcasting and content production", code: "93", valorAgregado: "696", pibPercent: "0.27%" },
+    { name: "Financial intermediation", code: "94", valorAgregado: "5.805", pibPercent: "2.29%" },
+    { name: "Insurance and reinsurance", code: "95", valorAgregado: "638", pibPercent: "0.25%" },
+    { name: "Financial auxiliaries", code: "96", valorAgregado: "3.129", pibPercent: "1.23%" },
+    { name: "Real estate activities", code: "97", valorAgregado: "5.512", pibPercent: "2.17%" },
+    { name: "Housing services", code: "98", valorAgregado: "16.861", pibPercent: "6.65%" },
+    { name: "Legal and accounting services", code: "99", valorAgregado: "3.067", pibPercent: "1.21%" },
+    { name: "Architectural and engineering services", code: "100", valorAgregado: "6.716", pibPercent: "2.65%" },
+    { name: "Other professional, scientific and technical services", code: "101", valorAgregado: "6.885", pibPercent: "2.72%" },
+    { name: "Rental and leasing activities", code: "102", valorAgregado: "2.802", pibPercent: "1.11%" },
+    { name: "Administrative and support services", code: "103", valorAgregado: "8.153", pibPercent: "3.22%" },
+    { name: "Public administration", code: "104", valorAgregado: "13.005", pibPercent: "5.13%" },
+    { name: "Public education", code: "105", valorAgregado: "9.005", pibPercent: "3.55%" },
+    { name: "Private education", code: "106", valorAgregado: "5.745", pibPercent: "2.27%" },
+    { name: "Public health", code: "107", valorAgregado: "8.518", pibPercent: "3.36%" },
+    { name: "Private health and social assistance", code: "108", valorAgregado: "7.787", pibPercent: "3.07%" },
+    { name: "Membership organizations", code: "109", valorAgregado: "975", pibPercent: "0.38%" },
+    { name: "Arts, entertainment and recreation", code: "110", valorAgregado: "1.386", pibPercent: "0.55%" },
+    { name: "Other personal services", code: "111", valorAgregado: "2.414", pibPercent: "0.95%" }
   ];
 
   const matrix = document.getElementById('sectorsMatrix');
@@ -284,7 +288,7 @@
     el.addEventListener('mouseleave', hideTooltip);
     el.addEventListener('mousemove', (e) => updateTooltipPosition(e));
     el.addEventListener('click', (e) => { e.stopPropagation(); selectSector(sector, index); });
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); showTooltip(sector, e.touches[0]); }, {passive:false});
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); selectSector(sector, index); showTooltip(sector, e.touches[0]); }, {passive:false});
     matrix.appendChild(el);
     sectorElements.push(el);
   });
@@ -305,8 +309,8 @@
 
   function showTooltip(sector, event){
     tooltipTitle.textContent = sector.name;
-    tooltipValorAgregado.textContent = 'Value added: ' + sector.valorAgregado + ' billion CLP (2022)';
-    tooltipPibPercent.textContent = 'GDP share 2022: ' + sector.pibPercent;
+    tooltipValorAgregado.textContent = 'Value added: ' + sector.valorAgregado + ' billion CLP (2023)';
+    tooltipPibPercent.textContent = 'GDP share 2023: ' + sector.pibPercent;
     tooltipCode.textContent = 'Code ' + sector.code;
     if (selectedSector){
       tooltipSelectedSector.textContent = 'Selected sector GDP: ' + selectedSector.pibPercent;
@@ -318,15 +322,15 @@
 
   function hideTooltip(){ tooltip.classList.remove('show'); }
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.classList.contains('sector')){
-      selectedSector = null;
-      sectorElements.forEach(el => el.classList.remove('selected', 'lower-value'));
-      insightBox.innerHTML =
-        '<div class="insight-label">Interactive analysis</div>' +
-        '<p>Click any sector to see how it compares with the other 110 in Chile\'s economy.</p>';
-    }
-  });
+  function resetSelection(){
+    selectedSector = null;
+    sectorElements.forEach(el => el.classList.remove('selected', 'lower-value'));
+    insightBox.innerHTML =
+      '<div class="insight-label">Interactive analysis</div>' +
+      '<p>Click any sector to see how it compares with the other 110 in Chile\'s economy.</p>';
+  }
+  document.addEventListener('click', (e) => { if (!e.target.classList.contains('sector')) resetSelection(); });
+  document.addEventListener('touchstart', (e) => { if (!e.target.classList.contains('sector')) resetSelection(); }, {passive:true});
 
   function updateTooltipPosition(e){
     if (!tooltip.classList.contains('show')) return;
