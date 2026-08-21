@@ -516,6 +516,12 @@
   minInput.addEventListener('change', readInputs);
   secInput.addEventListener('change', readInputs);
 
+  // Al hacer clic o foco, selecciona todo el número para poder escribir encima sin borrar a mano
+  [minInput, secInput].forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('click', () => inp.select());
+  });
+
   quickButtons.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON') {
       minInput.value = e.target.dataset.min;
