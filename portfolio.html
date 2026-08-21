@@ -50,6 +50,12 @@
   .matrix i{background:var(--ink);border-radius:1px;transition:opacity .6s ease,transform .6s ease}
   .project:hover .matrix i{transform:scale(.92)}
 
+  /* countdown / fuse motif */
+  .timer-motif{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:var(--frame);border-radius:var(--r);padding:10px}
+  .timer-ring{position:relative;width:62%;aspect-ratio:1/1;border-radius:50%;background:conic-gradient(var(--ink) var(--pct,35%), var(--hair) 0);transition:transform .6s ease}
+  .timer-ring::before{content:"";position:absolute;inset:14%;border-radius:50%;background:var(--paper)}
+  .project:hover .timer-ring{transform:scale(.94)}
+
   .more{margin-top:clamp(2rem,4vw,2.8rem);border-top:1px dashed var(--hair-strong);padding-top:1.4rem;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--hair-strong)}
 
   .colophon{display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;padding:clamp(2.2rem,5vw,3.4rem) 0 clamp(2.6rem,6vw,4rem);border-top:1px solid var(--hair)}
@@ -69,7 +75,7 @@
   }
   @media (max-width:760px){
     .project{grid-template-columns:1fr;gap:1.8rem}
-    .matrix{max-width:300px;order:-1}
+    .matrix,.timer-motif{max-width:300px;order:-1}
     .colophon{flex-direction:column;align-items:flex-start;gap:1.4rem}
   }
 </style>
@@ -107,6 +113,22 @@
         </div>
         <div class="matrix" aria-hidden="true" id="matrix"></div>
       </a>
+
+      <a class="project reveal" href="countdown.html">
+        <div class="p-main">
+          <div class="p-num">02</div>
+          <h2 class="p-title">Countdown Timer</h2>
+          <p class="p-desc">A small, distraction-free countdown built for exam time. Set the minutes, and the page darkens as time runs out — no sound, just a quiet visual pressure to keep working.</p>
+          <div class="p-foot">
+            <span class="p-tag">Interactive</span>
+            <span class="p-tag">Utility</span>
+            <span class="p-open">Open ↗</span>
+          </div>
+        </div>
+        <div class="timer-motif" aria-hidden="true">
+          <div class="timer-ring" id="timerRing"></div>
+        </div>
+      </a>
     </div>
 
     <p class="more reveal">More to come</p>
@@ -120,7 +142,6 @@
         <div class="sub">Applied economist · Santiago</div>
       </div>
     </div>
-    <div class="sig">Honest scales and balances are the Lord's.<cite>Proverbs 16:11</cite></div>
     <div class="clock"><span class="pulse"></span><span id="clock">Santiago · --:--:--</span></div>
   </footer>
 
@@ -136,6 +157,15 @@
     c.style.opacity=Math.min(o,0.92).toFixed(2);
     m.appendChild(c);
   }
+
+  // countdown motif: slow ticking ring, resets when it completes
+  const ring=document.getElementById('timerRing');
+  let pct=0;
+  setInterval(()=>{
+    pct=(pct+1)%100;
+    ring.style.setProperty('--pct', pct+'%');
+  }, 90);
+
   const clockEl=document.getElementById('clock');
   function tick(){const t=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());clockEl.textContent='Santiago · '+t;}
   tick();setInterval(tick,1000);
