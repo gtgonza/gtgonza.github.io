@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cuenta atrás para la prueba</title>
+<style>
+  :root {
+    --bg: #1b1f2a;
+    --card: #242938;
+    --accent: #ffb74d;
+    --accent2: #4dd0e1;
+    --danger: #ff6b6b;
+    --text: #f2f2f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #2b3145 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    transition: box-shadow 0.3s ease;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: #9aa0ae;
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+  .timer-display {
+    font-size: 4.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+    margin: 10px 0 24px;
+    transition: color 0.3s ease, transform 0.15s ease;
+  }
+  .timer-display.warning { color: var(--accent); }
+  .timer-display.danger { color: var(--danger); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .setup {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .setup label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    color: #9aa0ae;
+  }
+  .setup input {
+    margin-top: 6px;
+    width: 80px;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #1b1f2a;
+    color: var(--text);
+    font-size: 1.1rem;
+    text-align: center;
+  }
+  .quick-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .quick-buttons button {
+    background: #1b1f2a;
+    color: var(--text);
+    border: 1px solid #3a4058;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .quick-buttons button:hover { background: #3a4058; }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .controls button {
+    border: none;
+    border-radius: 14px;
+    padding: 14px 22px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.2s;
+  }
+  .controls button:active { transform: scale(0.96); }
+  #startBtn { background: var(--accent2); color: #10222a; }
+  #pauseBtn { background: #3a4058; color: var(--text); }
+  #resetBtn { background: transparent; color: #9aa0ae; border: 1px solid #3a4058; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status {
+    margin-top: 18px;
+    font-size: 0.9rem;
+    color: #9aa0ae;
+    min-height: 20px;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    text-align: center;
+    flex-direction: column;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+  }
+  .overlay p { color: #cfd3dc; }
+  .overlay button {
+    margin-top: 20px;
+    background: var(--accent2);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #10222a;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <h1>⏱️ Cuenta atrás para la prueba</h1>
+  <div class="subtitle">Configura el tiempo y dale a empezar</div>
+
+  <div class="timer-display" id="display">00:00</div>
+
+  <div class="setup" id="setup">
+    <label>Minutos
+      <input type="number" id="minInput" value="30" min="0" max="180">
+    </label>
+    <label>Segundos
+      <input type="number" id="secInput" value="0" min="0" max="59">
+    </label>
+  </div>
+
+  <div class="quick-buttons" id="quickButtons">
+    <button data-min="5">5 min</button>
+    <button data-min="10">10 min</button>
+    <button data-min="30">30 min</button>
+    <button data-min="45">45 min</button>
+    <button data-min="60">60 min</button>
+    <button data-min="90">90 min</button>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">▶ Empezar</button>
+    <button id="pauseBtn" disabled>⏸ Pausar</button>
+    <button id="resetBtn">↺ Reiniciar</button>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <h2>⏰ ¡Se acabó el tiempo!</h2>
+  <p>Suelta el lápiz nomás.</p>
+  <button id="closeOverlay">Cerrar</button>
+</div>
+
+<script>
+  const display = document.getElementById('display');
+  const minInput = document.getElementById('minInput');
+  const secInput = document.getElementById('secInput');
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const status = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const closeOverlay = document.getElementById('closeOverlay');
+  const quickButtons = document.getElementById('quickButtons');
+
+  let totalSeconds = 30 * 60;
+  let remaining = totalSeconds;
+  let intervalId = null;
+  let running = false;
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  }
+
+  function updateDisplay() {
+    display.textContent = formatTime(remaining);
+    display.classList.remove('warning','danger');
+    if (remaining <= 10) {
+      display.classList.add('danger');
+    } else if (remaining <= 60) {
+      display.classList.add('warning');
+    }
+  }
+
+  function readInputs() {
+    const m = parseInt(minInput.value) || 0;
+    const s = parseInt(secInput.value) || 0;
+    totalSeconds = m * 60 + s;
+    remaining = totalSeconds;
+    updateDisplay();
+  }
+
+  minInput.addEventListener('change', readInputs);
+  secInput.addEventListener('change', readInputs);
+
+  quickButtons.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+      minInput.value = e.target.dataset.min;
+      secInput.value = 0;
+      readInputs();
+      status.textContent = '';
+    }
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (remaining <= 0) return;
+    running = true;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    minInput.disabled = true;
+    secInput.disabled = true;
+    status.textContent = 'Corriendo...';
+    intervalId = setInterval(() => {
+      remaining--;
+      updateDisplay();
+      if (remaining <= 0) {
+        clearInterval(intervalId);
+        running = false;
+        startBtn.disabled = true;
+        pauseBtn.disabled = true;
+        status.textContent = 'Terminado.';
+        overlay.classList.add('show');
+      }
+    }, 1000);
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    clearInterval(intervalId);
+    running = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    status.textContent = 'Pausado.';
+  });
+
+  resetBtn.addEventListener('click', () => {
+    clearInterval(intervalId);
+    running = false;
+    minInput.disabled = false;
+    secInput.disabled = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    status.textContent = '';
+    overlay.classList.remove('show');
+    readInputs();
+  });
+
+  closeOverlay.addEventListener('click', () => {
+    overlay.classList.remove('show');
+  });
+
+  readInputs();
+</script>
+
+</body>
+</html>
