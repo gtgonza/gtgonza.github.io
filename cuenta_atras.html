@@ -3,87 +3,247 @@
 <head>
 <meta charset="UTF-8">
 <title>Cuenta atrás para la prueba</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💣</text></svg>">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600&display=swap');
+
   :root {
-    --bg: #1b1f2a;
-    --card: #242938;
-    --accent: #ffb74d;
-    --accent2: #4dd0e1;
-    --danger: #ff6b6b;
-    --text: #f2f2f2;
+    --bg1: #ece3d5;
+    --bg2: #d8c9b4;
+    --card: #f4ede1;
+    --ink: #3b332a;
+    --muted: #8a7c68;
+    --rust: #b5633a;
+    --olive: #6e7457;
+    --line: #cbb99f;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
-    background: radial-gradient(circle at top, #2b3145 0%, var(--bg) 70%);
-    color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.35), transparent 50%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
   }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+  }
+
+  .darken-layer {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.9s ease;
+  }
+
   .card {
     background: var(--card);
-    border-radius: 24px;
-    padding: 40px 36px;
+    border-radius: 6px;
+    padding: 48px 40px 36px;
     width: 100%;
-    max-width: 480px;
+    max-width: 460px;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    transition: box-shadow 0.3s ease;
+    box-shadow: 0 24px 60px rgba(59,51,42,0.18), 0 1px 0 rgba(255,255,255,0.4) inset;
+    border: 1px solid var(--line);
+    position: relative;
+    z-index: 1;
+  }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
   }
   h1 {
-    font-size: 1.4rem;
-    margin: 0 0 6px;
-    font-weight: 600;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2rem;
+    margin: 0 0 26px;
+    color: var(--ink);
   }
-  .subtitle {
-    color: #9aa0ae;
-    font-size: 0.9rem;
-    margin-bottom: 28px;
-  }
-  .timer-display {
-    font-size: 4.2rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    font-variant-numeric: tabular-nums;
-    margin: 10px 0 24px;
-    transition: color 0.3s ease, transform 0.15s ease;
-  }
-  .timer-display.warning { color: var(--accent); }
-  .timer-display.danger { color: var(--danger); animation: pulse 1s infinite; }
 
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.06); }
+  .scene {
+    position: relative;
+    height: 150px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .bomb-wrap {
+    position: relative;
+    width: 110px;
+    height: 130px;
+  }
+  .fuse {
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    width: 4px;
+    height: 34px;
+    background: #5a4a38;
+    border-radius: 2px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(8deg);
+  }
+  .spark {
+    position: absolute;
+    top: -38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 6px #ffb04d);
+  }
+  .bomb-body {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, #4a4038, #241f1a 70%);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+    transition: transform 0.25s ease, filter 0.25s ease;
+  }
+  .bomb-body::after {
+    content: "";
+    position: absolute;
+    top: 14px; left: 20px;
+    width: 22px; height: 14px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    filter: blur(2px);
+  }
+  .bomb-cap {
+    position: absolute;
+    bottom: 84px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 26px;
+    height: 14px;
+    background: #241f1a;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .bomb-body {
+    transition: transform 0.9s ease, filter 0.9s ease;
+  }
+  .bomb-wrap.shake-10 {
+    animation: rumbleWrap 0.55s infinite;
+  }
+  .bomb-wrap.shake-5 {
+    animation: rumbleWrap 0.4s infinite;
+  }
+  .bomb-wrap.rumbling {
+    animation: rumbleWrap 0.28s infinite;
+  }
+
+  @keyframes rumbleWrap {
+    0%, 100% { margin-left: 0; margin-top: 0; }
+    25% { margin-left: -5px; margin-top: 3px; }
+    50% { margin-left: 5px; margin-top: -2px; }
+    75% { margin-left: -3px; margin-top: 4px; }
+  }
+
+  .blast {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    font-size: 5rem;
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(.2,1.4,.4,1), opacity 0.2s ease;
+  }
+  .blast.show { transform: translateX(-50%) scale(1); opacity: 1; }
+
+  .bomb-wrap.gone { opacity: 0; transition: opacity 0.1s; }
+
+  .shake-screen { animation: screenshake 0.4s; }
+  @keyframes screenshake {
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-6px, 3px); }
+    40% { transform: translate(6px, -3px); }
+    60% { transform: translate(-4px, 4px); }
+    80% { transform: translate(4px, -2px); }
+  }
+
+  .timer-display {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.6rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    margin: 4px 0 20px;
+    color: var(--ink);
+    transition: color 0.3s ease;
+  }
+  .timer-display.warning { color: var(--rust); }
+  .timer-display.danger { color: #a3402a; }
+
+  .progress-track {
+    width: 100%;
+    height: 5px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 0 26px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--olive), var(--rust));
+    border-radius: 999px;
+    transition: width 1s linear;
   }
 
   .setup {
     display: flex;
     gap: 12px;
     justify-content: center;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
+    margin-bottom: 18px;
   }
   .setup label {
     display: flex;
     flex-direction: column;
-    font-size: 0.75rem;
-    color: #9aa0ae;
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
   }
   .setup input {
     margin-top: 6px;
-    width: 80px;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    background: #1b1f2a;
-    color: var(--text);
-    font-size: 1.1rem;
+    width: 76px;
+    padding: 9px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: #fbf6ec;
+    color: var(--ink);
+    font-size: 1.05rem;
     text-align: center;
+    font-family: inherit;
   }
+  .setup input:focus { outline: 1px solid var(--rust); }
+
   .quick-buttons {
     display: flex;
     gap: 8px;
@@ -92,79 +252,116 @@
     margin-bottom: 24px;
   }
   .quick-buttons button {
-    background: #1b1f2a;
-    color: var(--text);
-    border: 1px solid #3a4058;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 8px 16px;
-    font-size: 0.85rem;
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    font-family: inherit;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
   }
-  .quick-buttons button:hover { background: #3a4058; }
+  .quick-buttons button:hover { background: var(--line); color: var(--ink); }
 
   .controls {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
   }
   .controls button {
     border: none;
-    border-radius: 14px;
-    padding: 14px 22px;
-    font-size: 1rem;
+    border-radius: 4px;
+    padding: 13px 20px;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
     font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
-    transition: transform 0.15s ease, opacity 0.2s;
+    transition: transform 0.15s ease, opacity 0.2s, background 0.2s;
   }
   .controls button:active { transform: scale(0.96); }
-  #startBtn { background: var(--accent2); color: #10222a; }
-  #pauseBtn { background: #3a4058; color: var(--text); }
-  #resetBtn { background: transparent; color: #9aa0ae; border: 1px solid #3a4058; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #startBtn { background: var(--olive); color: #f4ede1; }
+  #startBtn:hover:not(:disabled) { background: #5c6247; }
+  #pauseBtn { background: #e3d6c1; color: var(--ink); }
+  #resetBtn { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
 
   .status {
-    margin-top: 18px;
-    font-size: 0.9rem;
-    color: #9aa0ae;
-    min-height: 20px;
+    margin-top: 16px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    min-height: 18px;
+    letter-spacing: 0.3px;
+  }
+  .status.done {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.3rem;
+    color: var(--rust);
   }
 
-  .overlay {
+  .footer-email {
+    margin-top: 26px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.6px;
+  }
+
+  .smoke {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(90,80,70,0.35);
+    pointer-events: none;
+    animation: smokeUp 1.4s ease-out forwards;
+  }
+  @keyframes smokeUp {
+    0% { transform: translateY(0) scale(0.4); opacity: 0.6; }
+    100% { transform: translateY(-70px) scale(1.6); opacity: 0; }
+  }
+
+  .confetti-layer {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    text-align: center;
-    flex-direction: column;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
   }
-  .overlay.show { display: flex; }
-  .overlay h2 {
-    font-size: 2.2rem;
-    margin-bottom: 10px;
+  .confetti-piece {
+    position: absolute;
+    top: -20px;
+    width: 6px;
+    height: 12px;
+    border-radius: 1px;
+    animation: fall linear forwards;
   }
-  .overlay p { color: #cfd3dc; }
-  .overlay button {
-    margin-top: 20px;
-    background: var(--accent2);
-    border: none;
-    padding: 12px 24px;
-    border-radius: 12px;
-    font-size: 1rem;
-    cursor: pointer;
-    color: #10222a;
-    font-weight: 600;
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(480deg); opacity: 0.8; }
   }
 </style>
 </head>
 <body>
 
+<div class="darken-layer" id="darkenLayer"></div>
+
 <div class="card" id="card">
-  <h1>⏱️ Cuenta atrás para la prueba</h1>
-  <div class="subtitle">Configura el tiempo y dale a empezar</div>
+  <h1>Cuenta atrás</h1>
+
+  <div class="scene">
+    <div class="bomb-wrap" id="bombWrap">
+      <div class="fuse" id="fuse"></div>
+      <div class="spark" id="spark">✨</div>
+      <div class="bomb-cap"></div>
+      <div class="bomb-body"></div>
+    </div>
+    <div class="blast" id="blast">💥</div>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
 
   <div class="timer-display" id="display">00:00</div>
 
@@ -178,28 +375,24 @@
   </div>
 
   <div class="quick-buttons" id="quickButtons">
-    <button data-min="5">5 min</button>
     <button data-min="10">10 min</button>
     <button data-min="30">30 min</button>
-    <button data-min="45">45 min</button>
     <button data-min="60">60 min</button>
-    <button data-min="90">90 min</button>
+    <button data-min="100">100 min</button>
   </div>
 
   <div class="controls">
-    <button id="startBtn">▶ Empezar</button>
-    <button id="pauseBtn" disabled>⏸ Pausar</button>
-    <button id="resetBtn">↺ Reiniciar</button>
+    <button id="startBtn">Empezar</button>
+    <button id="pauseBtn" disabled>Pausar</button>
+    <button id="resetBtn">Reiniciar</button>
   </div>
 
   <div class="status" id="status"></div>
+
+  <div class="footer-email">introecosec2@gmail.com</div>
 </div>
 
-<div class="overlay" id="overlay">
-  <h2>⏰ ¡Se acabó el tiempo!</h2>
-  <p>Suelta el lápiz nomás.</p>
-  <button id="closeOverlay">Cerrar</button>
-</div>
+<div class="confetti-layer" id="confettiLayer"></div>
 
 <script>
   const display = document.getElementById('display');
@@ -209,20 +402,25 @@
   const pauseBtn = document.getElementById('pauseBtn');
   const resetBtn = document.getElementById('resetBtn');
   const status = document.getElementById('status');
-  const overlay = document.getElementById('overlay');
-  const closeOverlay = document.getElementById('closeOverlay');
   const quickButtons = document.getElementById('quickButtons');
+  const bombWrap = document.getElementById('bombWrap');
+  const blast = document.getElementById('blast');
+  const progressFill = document.getElementById('progressFill');
+  const confettiLayer = document.getElementById('confettiLayer');
+  const card = document.getElementById('card');
+  const darkenLayer = document.getElementById('darkenLayer');
 
   let totalSeconds = 30 * 60;
   let remaining = totalSeconds;
   let intervalId = null;
-  let running = false;
 
   function formatTime(s) {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
   }
+
+  const originalTitle = document.title;
 
   function updateDisplay() {
     display.textContent = formatTime(remaining);
@@ -232,6 +430,79 @@
     } else if (remaining <= 60) {
       display.classList.add('warning');
     }
+    updateBomb();
+    document.title = intervalId ? (formatTime(remaining) + ' — Cuenta atrás') : originalTitle;
+  }
+
+  function updateBomb() {
+    if (totalSeconds <= 0) return;
+    const elapsedRatio = 1 - (remaining / totalSeconds);
+    progressFill.style.width = (elapsedRatio * 100) + '%';
+
+    // La bomba crece de forma continua: de escala 1 a 2.1
+    const scale = 1 + elapsedRatio * 1.1;
+    const bombBody = bombWrap.querySelector('.bomb-body');
+    bombBody.style.transform = 'translateX(-50%) scale(' + scale.toFixed(3) + ')';
+    bombBody.style.filter = 'saturate(' + (1 + elapsedRatio * 0.6).toFixed(2) +
+      ') brightness(' + (1 + elapsedRatio * 0.2).toFixed(2) + ')';
+
+    const remainingRatio = remaining / totalSeconds;
+    bombWrap.classList.remove('shake-10','shake-5','rumbling');
+    if (remainingRatio <= 0.02) {
+      bombWrap.classList.add('rumbling');
+    } else if (remainingRatio <= 0.05) {
+      bombWrap.classList.add('shake-5');
+    } else if (remainingRatio <= 0.10) {
+      bombWrap.classList.add('shake-10');
+    }
+
+    // El fondo se oscurece progresivamente de blanco a negro
+    darkenLayer.style.opacity = (elapsedRatio * 0.85).toFixed(3);
+  }
+
+  function launchConfetti() {
+    const colors = ['#b5633a','#6e7457','#cbb99f','#8a7c68','#e3d6c1'];
+    for (let i = 0; i < 50; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+      piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      piece.style.opacity = 0.6 + Math.random() * 0.3;
+      confettiLayer.appendChild(piece);
+      setTimeout(() => piece.remove(), 4000);
+    }
+  }
+
+  function launchSmoke() {
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement('div');
+      const size = 18 + Math.random() * 20;
+      s.className = 'smoke';
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = (45 + Math.random() * 20) + '%';
+      s.style.bottom = (Math.random() * 10) + 'px';
+      s.style.animationDelay = (Math.random() * 0.3) + 's';
+      document.querySelector('.scene').appendChild(s);
+      setTimeout(() => s.remove(), 1800);
+    }
+  }
+
+  function explodeBomb() {
+    bombWrap.classList.add('gone');
+    blast.classList.add('show');
+    card.classList.add('shake-screen');
+    launchSmoke();
+    launchConfetti();
+    setTimeout(() => card.classList.remove('shake-screen'), 400);
+  }
+
+  function updateStatusProgress() {
+    if (totalSeconds <= 0) return;
+    const elapsedRatio = 1 - (remaining / totalSeconds);
+    const pct = Math.min(100, Math.round(elapsedRatio * 100));
+    status.textContent = 'Llevamos un ' + pct + '%...';
   }
 
   function readInputs() {
@@ -251,53 +522,79 @@
       secInput.value = 0;
       readInputs();
       status.textContent = '';
+      status.classList.remove('done');
     }
   });
 
   startBtn.addEventListener('click', () => {
     if (remaining <= 0) return;
-    running = true;
     startBtn.disabled = true;
     pauseBtn.disabled = false;
     minInput.disabled = true;
     secInput.disabled = true;
-    status.textContent = 'Corriendo...';
+    status.classList.remove('done');
+    updateStatusProgress();
     intervalId = setInterval(() => {
       remaining--;
       updateDisplay();
+      updateStatusProgress();
       if (remaining <= 0) {
         clearInterval(intervalId);
-        running = false;
+        intervalId = null;
         startBtn.disabled = true;
         pauseBtn.disabled = true;
-        status.textContent = 'Terminado.';
-        overlay.classList.add('show');
+        status.textContent = 'Se acabó el tiempo';
+        status.classList.add('done');
+        document.title = originalTitle;
+        explodeBomb();
       }
     }, 1000);
   });
 
   pauseBtn.addEventListener('click', () => {
     clearInterval(intervalId);
-    running = false;
+    intervalId = null;
     startBtn.disabled = false;
     pauseBtn.disabled = true;
-    status.textContent = 'Pausado.';
+    status.textContent = 'Pausado';
+    document.title = originalTitle;
   });
 
   resetBtn.addEventListener('click', () => {
     clearInterval(intervalId);
-    running = false;
+    intervalId = null;
+    document.title = originalTitle;
     minInput.disabled = false;
     secInput.disabled = false;
     startBtn.disabled = false;
     pauseBtn.disabled = true;
     status.textContent = '';
-    overlay.classList.remove('show');
+    status.classList.remove('done');
+    bombWrap.classList.remove('gone','shake-10','shake-5','rumbling');
+    blast.classList.remove('show');
+    progressFill.style.width = '0%';
+    darkenLayer.style.opacity = '0';
+    const bombBody = bombWrap.querySelector('.bomb-body');
+    bombBody.style.transform = 'translateX(-50%) scale(1)';
+    bombBody.style.filter = 'saturate(1) brightness(1)';
     readInputs();
   });
 
-  closeOverlay.addEventListener('click', () => {
-    overlay.classList.remove('show');
+  document.addEventListener('keydown', (e) => {
+    const tag = document.activeElement.tagName;
+    if (tag === 'INPUT') return; // no interferir mientras se editan los minutos/segundos
+
+    if (e.code === 'Enter') {
+      e.preventDefault();
+      if (!startBtn.disabled) startBtn.click();
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      if (!startBtn.disabled) startBtn.click();
+      else if (!pauseBtn.disabled) pauseBtn.click();
+    } else if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      resetBtn.click();
+    }
   });
 
   readInputs();
