@@ -6,6 +6,10 @@ Juego de ajedrez y entrenamiento a partir de tus propios errores. Se aloja como 
 
 El color se sortea. Cada lado dispone de 10 minutos, sin incremento y sin deshacer. El reloj del rival incluye su cálculo y la espera de la API. Al terminar, primero escribes tu autoevaluación. El motor revisa tus jugadas y crea hasta tres ejercicios desde las posiciones anteriores a tus mayores pérdidas de evaluación. Cada intento debe incluir la respuesta que esperabas del rival. Los ejercicios no cambian la partida original.
 
+La revisión local cuenta los errores y ofrece una explicación sencilla basada en respuestas legales calculadas: jaques o capturas que aparecían después de tus errores, cuando esa evidencia existe. Señala el primer error detectado y lo incluye entre los ejercicios, junto con hasta dos errores relevantes adicionales. No atribuye motivos tácticos ni carencias personales que el cálculo no permita comprobar.
+
+Al practicar se muestra primero la jugada previa del rival, animada, y después la pregunta «¿Qué harías ahora?». Si la posición corresponde a tu primera jugada, no se inventa una jugada previa. Mueves tu pieza, recibes una explicación y, si fallas, debes reintentar. La mejor alternativa permanece oculta hasta que encuentres una buena solución. Cada intento se añade automáticamente al cuaderno del navegador como correcto o incorrecto: acertar después no borra el primer fallo. El historial ayuda a revisar tus errores; no entrena ni modifica los modelos de IA externos.
+
 El reloj se mide en el navegador con tiempo monotónico y sigue corriendo al cambiar de pestaña. Si cierras o recargas se pierde la partida; esta versión no guarda partidas activas. Las tablas por triple repetición y 50 movimientos se adjudican automáticamente. No hay pistas ni evaluaciones durante el juego.
 
 Mientras el rival decide, aparece «Pensando…» junto a su nombre, con puntos animados. Sus piezas se desplazan visualmente de origen a destino (también la torre en un enroque). La selección de otra casilla no reinicia una animación en curso y el sistema respeta la preferencia del navegador de reducir movimiento.

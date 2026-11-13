@@ -9,7 +9,8 @@
 <div class="layout">
 <section class="play-area">
 <div class="player"><span class="avatar">♟</span><div><strong id="opponentName">Tu rival · IA generativa</strong><small id="opponentSub">Juego razonable, dificultad adaptativa</small><span id="thinking" class="thinking" role="status" hidden>Pensando<span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span></span></div><span id="boardMode" class="pill">PARTIDA</span><strong id="opponentClock" class="chess-clock">10:00</strong></div>
-<div class="board-shell"><div id="board" class="board" role="group" aria-label="Tablero de ajedrez"></div></div>
+<p id="practiceBoardPrompt" class="practice-board-prompt" hidden></p><div class="board-shell"><div id="board" class="board" role="group" aria-label="Tablero de ajedrez"></div></div>
+<section id="gameResult" class="game-result" role="status" aria-live="polite" hidden><strong id="resultTitle"></strong><span id="resultDetail"></span></section>
 <div class="player bottom"><span class="avatar human">♙</span><div><strong>Tú</strong><small id="humanSub">Tu color se sortea al empezar</small></div><strong id="humanClock" class="chess-clock">10:00</strong></div>
 <p id="status" role="status" aria-live="polite">Listo para jugar</p><div class="board-controls"><button id="flip" class="quiet">↻ Girar tablero</button><button id="returnGame" class="quiet" hidden>Volver a la posición final</button><button id="download" class="quiet" disabled>↓ Descargar PGN</button></div>
 

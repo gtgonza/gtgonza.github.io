@@ -1,5 +1,6 @@
 import { Chess } from './vendor/chess.js';
 import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
+import {localReview,exerciseFeedback} from './learning.js';
 export {MODEL_PRESETS} from './models.js';
 
 export class BrowserEngine {
@@ -119,11 +120,18 @@ export class ChessTrainer {
   runClock(color){this.syncClock();if(!this.isOver()){this.game.running=color;this.game.since=this.now();}}
   stopClock(){this.syncClock();if(this.game)this.game.running=null;}
   setResult(){const g=this.game;if(!g||!this.isOver())return;let result='1/2-1/2';if(g.ended==='resign'||g.ended==='timeout')result=g.loser==='w'?'0-1':'1-0';else if(g.chess.isCheckmate())result=g.chess.turn()==='w'?'0-1':'1-0';g.chess.setHeader('Result',result);g.running=null;}
+  outcome(){
+    const g=this.game;if(!g||!this.isOver())return null;
+    const reason=g.ended||(g.chess.isCheckmate()?'checkmate':'draw');
+    const loser=reason==='checkmate'?g.chess.turn():g.loser||null,winner=loser?(loser==='w'?'b':'w'):null;
+    const kings=g.chess.board().flat().filter(p=>p?.type==='k');
+    return {reason,winner,loser,loserKing:kings.find(p=>p.color===loser)?.square||null,winnerKing:kings.find(p=>p.color===winner)?.square||null};
+  }
   status(){const g=this.game,c=g.chess;if(g.ended==='resign')return 'Te rendiste. Ganan las '+(g.human==='w'?'negras.':'blancas.');if(g.ended==='timeout')return 'Tiempo agotado. Ganan las '+(g.loser==='w'?'negras.':'blancas.');if(c.isCheckmate())return 'Jaque mate. Ganan las '+(c.turn()==='w'?'negras.':'blancas.');if(c.isDraw())return 'Tablas'+(c.isStalemate()?' por ahogado.':c.isThreefoldRepetition()?' por repetición.':c.isInsufficientMaterial()?' por material insuficiente.':' por 50 movimientos.');return (c.turn()===g.human?'Tu turno':'El rival está pensando')+(c.isCheck()?' · Jaque':'');}
-  view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
+  view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),outcome:this.outcome(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
     levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
     moves:g.moves.map(m=>g.reviewed?{...m}:{ply:m.ply,san:m.san,from:m.from,to:m.to,color:m.color}),notice:g.notice||null,report:g.report||null,
-    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,done:!!x.done,answer:x.done?x.answer:null,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
+    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,beforeOpponentFen:x.beforeOpponentFen,opponentMove:x.opponentMove,done:!!x.done,answer:x.answer||null,attempts:(x.attempts||[]).map(a=>({...a})),failedAttempts:(x.attempts||[]).filter(a=>!a.good).length,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
   record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};g.moves.push(entry);this.setResult();return entry;}
   async start({opponent='stockfish',rating=350,color,levelMode='manual'}={}){
     if(opponent==='generative'&&!this.ai.key)throw new Error('Conecta una clave personal para usar el rival generativo. El rival sin conexión a GPT está disponible sin clave.');
@@ -167,11 +175,12 @@ export class ChessTrainer {
     const mine=g.moves.filter(m=>m.color===g.human);let done=0;
     for(const m of mine){this.onProgress(`Revisando tu jugada ${++done} de ${mine.length}…`);try{Object.assign(m,await this.analyzeEntry(m));}catch(e){m.analysisError=e.message;m.kind='neutral';m.label='Sin evaluar';}}
     const counts=Object.fromEntries(['blunder','mistake','inaccuracy','good','neutral'].map(k=>[k,mine.filter(m=>m.kind===k).length]));
-    const critical=mine.filter(m=>m.loss>=50).sort((a,b)=>b.loss-a.loss).slice(0,3);
-    g.exercises=critical.map(m=>({ply:m.ply,fen:m.beforeFen}));
+    const issues=mine.filter(m=>m.loss>=50).sort((a,b)=>a.ply-b.ply);
+    const critical=issues.length?[issues[0],...issues.slice(1).sort((a,b)=>b.loss-a.loss).slice(0,2)].sort((a,b)=>a.ply-b.ply):[];
+    g.exercises=critical.map(m=>{const prior=g.moves.find(p=>p.ply===m.ply-1);return {ply:m.ply,fen:m.beforeFen,attempts:[],beforeOpponentFen:prior?.beforeFen||null,opponentMove:prior?{from:prior.from,to:prior.to,san:prior.san,color:prior.color}:null};});
     const result=g.chess.getHeaders().Result;const win=result===(g.human==='w'?'1-0':'0-1'),lost=result===(g.human==='w'?'0-1':'1-0');
     const delta=(win?40:lost?-30:5)-Math.min(20,counts.blunder*5);
-    g.report={counts,critical:critical.map(m=>m.ply),missing:mine.filter(m=>m.analysisError).length,source:'Stockfish · revisión local',progress:{before:g.rating,after:Math.max(300,Math.min(2000,g.rating+delta))},text:`En ${mine.length} jugadas propias detecté ${counts.blunder} errores graves, ${counts.mistake} errores y ${counts.inaccuracy} imprecisiones.\n\n${critical.length?'Empieza por la jugada '+Math.ceil(critical[0].ply/2)+(g.human==='w'?'. ':'... ')+critical[0].san+'. Intenta resolver su posición de nuevo antes de mostrar la continuación.':'No hay pérdidas de al menos medio peón entre tus jugadas evaluadas. Puedes revisar tus decisiones seleccionándolas en el registro.'}`};
+    g.report={counts,critical:critical.map(m=>m.ply),missing:mine.filter(m=>m.analysisError).length,source:'Stockfish · revisión local',progress:{before:g.rating,after:Math.max(300,Math.min(2000,g.rating+delta))},text:localReview(mine,counts)};
     if(g.levelMode==='estimate'){
       g.report.estimate=estimateLevel(mine);
       if(g.report.estimate.enough)g.report.progress.after=Math.max(300,Math.min(2000,g.report.estimate.reference));
@@ -191,7 +200,10 @@ export class ChessTrainer {
   async exercise({ply,from,to,promotion,reason}){
     const g=this.game,x=g.exercises?.find(x=>x.ply===Number(ply));if(!this.isOver()||!g.reviewed||!x)throw new Error('Ejercicio no disponible.');if(!String(reason||'').trim())throw new Error('Escribe qué respondería el rival antes de comprobar.');
     const c=new Chess(x.fen),m=c.move({from,to,promotion:promotion||'q'});const before=await this.engine.evaluate(x.fen,{ms:1800}),after=await this.engine.evaluate(c.fen(),{ms:1800});const grade=classify(before,after,m.from+m.to+(m.promotion||''),before.best);
-    x.done=true;x.answer={san:m.san,good:grade.loss<50,...grade,bestLine:variation(x.fen,before.pv),replyLine:variation(c.fen(),after.pv),reason:String(reason).slice(0,1000),afterFen:c.fen()};return this.view();
+    const good=grade.loss<50,feedback=exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen:c.fen(),after,original:g.moves.find(m=>m.ply===x.ply)});
+    const attempt={number:(x.attempts?.length||0)+1,san:m.san,good,feedback,reason:String(reason).slice(0,1000),at:new Date().toISOString()};
+    (x.attempts||=[]).push(attempt);x.done=good;
+    x.answer={san:m.san,from:m.from,to:m.to,color:m.color,good,...grade,...(good?{bestLine:variation(x.fen,before.pv)}:{}),feedback,attemptNumber:attempt.number,replyLine:variation(c.fen(),after.pv),reason:attempt.reason,afterFen:c.fen()};return this.view();
   }
   async request(route,data={}){
     if(route==='config')return {ai:!!this.ai.key,model:this.ai.model,usage:this.ai.usage()};

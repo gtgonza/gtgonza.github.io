@@ -1,10 +1,12 @@
 import { ChessTrainer } from './core.js';
 import { PROVIDERS, MODEL_PRESETS, modelRates, CATALOG_DATE } from './models.js';
+import {Chess} from './vendor/chess.js';
 const $ = id => document.getElementById(id);
 const symbols = { k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟' };
 const names = { k:'rey',q:'dama',r:'torre',b:'alfil',n:'caballo',p:'peón' };
 let game = null, selected = null, flipped = false, busy = false, reviewFen = null, exerciseIndex = null, aiReady = false;
 let quietThinking=false,boardSignature='',renderedGame=null,renderedPly=0,renderedFlipped=false;
+let exercisePhase='challenge',exercisePreviewFen=null,exerciseMotion=null,preludeTimer=null;
 let journal = [], rating = 350;
 try { journal = JSON.parse(localStorage.getItem('entre-jugadas-journal') || '[]'); if (!Array.isArray(journal)) journal = []; rating = Number(localStorage.getItem('entre-jugadas-rating')) || 350; } catch {}
 $('rating').textContent = rating;
@@ -43,19 +45,32 @@ function parseBoard(fen) {
   }); return board;
 }
 function currentExercise() { return exerciseIndex === null ? null : game?.exercises[exerciseIndex]; }
-function activeFen() { return currentExercise()?.fen || reviewFen || game?.fen; }
-function activeLegal() { return currentExercise() ? (currentExercise().done ? [] : currentExercise().legal) : reviewFen || !game || game.over || game.turn!==game.human ? [] : game.legal; }
+function activeFen() { const x=currentExercise();return x?(exercisePhase==='prelude'?x.beforeOpponentFen:exercisePhase==='checking'?exercisePreviewFen:exercisePhase==='feedback'?x.answer?.afterFen||x.fen:x.fen):reviewFen||game?.fen; }
+function activeLegal() { return currentExercise() ? (currentExercise().done||exercisePhase!=='challenge' ? [] : currentExercise().legal) : reviewFen || !game || game.over || game.turn!==game.human ? [] : game.legal; }
 function showThinking(){
   const thinking=!!(game&&!game.over&&game.turn!==game.human&&busy&&quietThinking);
   $('thinking').hidden=!thinking;$('board').setAttribute('aria-busy',String(thinking));
   if(thinking)$('status').textContent='El rival está pensando…';
 }
+function showOutcome(){
+  const outcome=game?.outcome,visible=!!outcome&&!currentExercise()&&!reviewFen;
+  $('gameResult').hidden=!visible;if(!visible)return;
+  $('resultTitle').textContent={checkmate:'Jaque mate',timeout:'Tiempo agotado',resign:'Partida terminada',draw:'Tablas'}[outcome.reason]||'Partida terminada';
+  const won=outcome.winner===game.human;
+  $('gameResult').classList.toggle('result-win',won);$('gameResult').classList.toggle('result-draw',!outcome.winner);
+  $('resultDetail').textContent=outcome.winner?(won?'Ganaste. ':'Perdiste. ')+(outcome.winner==='w'?'Ganan las blancas.':'Ganan las negras.')+(outcome.reason==='resign'?' Terminó por rendición.':''):'La partida terminó en tablas.';
+}
 function drawBoard() {
   const fen=activeFen(),pieces = parseBoard(fen),legal = activeLegal(),board=$('board');
-  const signature=[fen,flipped,exerciseIndex,reviewFen,game?.id].join('|');
+  showOutcome();
+  $('practiceBoardPrompt').hidden=!currentExercise();
+  if(currentExercise())$('practiceBoardPrompt').textContent=exercisePhase==='prelude'?'Observa la última jugada del rival…':exercisePhase==='feedback'?(currentExercise().answer?.good?'Bien resuelto. Lee la explicación.':'Revisa la respuesta y vuelve a intentarlo.'):'¿Qué harías ahora? Elige tu jugada en el tablero.';
+  const mate=game?.outcome?.reason==='checkmate'&&fen===game.fen&&!currentExercise()?game.outcome:null;
+  const signature=[fen,flipped,exerciseIndex,reviewFen,game?.id,game?.outcome?.reason].join('|');
   if(signature===boardSignature){for(const square of board.children){const sq=square.dataset.square;square.disabled=busy;square.classList.toggle('selected',sq===selected);square.classList.toggle('target',!!selected&&legal.some(m=>m.from===selected&&m.to===sq));square.setAttribute('aria-pressed',String(sq===selected));}return;}
-  const lastMove=!currentExercise()&&!reviewFen?game?.moves.at(-1):null;
-  const animate=lastMove&&game.moves.length===renderedPly+1&&(!renderedGame||renderedGame===game.id)&&renderedFlipped===flipped&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const demoMotion=exerciseMotion;exerciseMotion=null;
+  const lastMove=demoMotion||(!currentExercise()&&!reviewFen?game?.moves.at(-1):null);
+  const animate=lastMove&&(demoMotion||(game.moves.length===renderedPly+1&&(!renderedGame||renderedGame===game.id)))&&renderedFlipped===flipped&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transitions=[];
   if(animate){
     transitions.push({from:lastMove.from,to:lastMove.to});
@@ -79,6 +94,8 @@ function drawBoard() {
     if (sq===selected) b.classList.add('selected');
     if (selected&&legal.some(m=>m.from===selected&&m.to===sq)) b.classList.add('target');
     if (last&&(last.from===sq||last.to===sq)) b.classList.add('last');
+    if(mate&&sq===mate.loserKing){b.classList.add('king-defeated');b.setAttribute('aria-label',b.getAttribute('aria-label')+' · jaque mate, rey derrotado');}
+    if(mate&&sq===mate.winnerKing){b.classList.add('king-victorious');b.setAttribute('aria-label',b.getAttribute('aria-label')+' · rey ganador');}
     b.disabled=busy; b.addEventListener('click',()=>squareClick(sq)); board.append(b);
   }
   for(const item of transitions){
@@ -107,7 +124,10 @@ async function squareClick(sq) {
     selected=null;
     if(currentExercise()) {
       if(!$('exerciseReason').value.trim()){notice('Antes de comprobar: escribe qué crees que respondería el rival.');drawBoard();return;}
-      await work('Comprobando tu solución y la respuesta del rival…',async()=>{game=await api('exercise',{ply:currentExercise().ply,from,to:sq,promotion,reason:$('exerciseReason').value});notice(null);renderExercise();});
+      const preview=new Chess(currentExercise().fen);const move=preview.move({from,to:sq,promotion:promotion||'q'});exercisePreviewFen=preview.fen();exercisePhase='checking';exerciseMotion={from,to:sq,color:move.color,san:move.san};drawBoard();
+      await work('Comprobando tu solución y la respuesta del rival…',async()=>{
+        try{game=await api('exercise',{ply:currentExercise().ply,from,to:sq,promotion,reason:$('exerciseReason').value});exercisePhase='feedback';logPractice(currentExercise());notice(null);}catch(e){exercisePhase='challenge';throw e;}finally{exercisePreviewFen=null;renderExercise();}
+      });
     } else await work('El rival está pensando…',async()=>{
       try{game=await api('move',{from,to:sq,promotion});notice(game.notice);}catch(e){try{game=await api('state');}catch{}throw e;}
       if(game.over) finish();
@@ -120,7 +140,7 @@ function render() {
   $('opponentName').textContent=game.opponent==='generative'?'IA generativa · tu rival':'Sin conexión a GPT · rival local';
   $('opponentSub').textContent='Nivel adaptativo '+game.rating+' · 10 min por lado';
   $('humanSub').textContent='Juegas con '+(game.human==='w'?'blancas':'negras')+' · sin deshacer';
-  $('status').textContent=!busy&&!game.over&&game.turn!==game.human&&game.notice?'Respuesta pendiente · reintenta o continúa sin conexión a GPT':game.status;
+  $('status').textContent=currentExercise()?'Práctica · la partida original permanece intacta':!busy&&!game.over&&game.turn!==game.human&&game.notice?'Respuesta pendiente · reintenta o continúa sin conexión a GPT':game.status;
   $('download').disabled=false;$('resign').hidden=game.over;
   $('retry').hidden=game.over||game.turn===game.human; $('offline').hidden=$('retry').hidden||game.opponent!=='generative';
   $('boardMode').textContent=currentExercise()?'EJERCICIO':reviewFen?'REVISIÓN':'PARTIDA';
@@ -137,6 +157,7 @@ function render() {
 }
 function finish(){ $('reflectionPanel').hidden=!!game.report;$('afterPanel').hidden=false;$('step2').classList.add('active'); }
 function showMove(ply) {
+  clearTimeout(preludeTimer);
   const m=game.moves.find(m=>m.ply===ply);if(!m?.beforeFen)return;
   exerciseIndex=null;reviewFen=m.afterFen;selected=null;$('reviewPanel').hidden=false;
   $('reviewTitle').textContent=Math.ceil(ply/2)+(m.color==='w'?'. ':'... ')+m.san+' · '+m.label;
@@ -157,11 +178,21 @@ function renderExercise(){
   const x=currentExercise();if(!x)return;
   $('exercisePanel').hidden=false;$('reviewPanel').hidden=true;$('step3').classList.add('active');
   $('exerciseTabs').replaceChildren();game.exercises.forEach((ex,i)=>{const b=document.createElement('button');b.textContent=(i+1)+(ex.done?' ✓':'');b.className=i===exerciseIndex?'chosen':'';b.onclick=()=>selectExercise(i);$('exerciseTabs').append(b);});
-  $('exercisePrompt').textContent='Jugada '+Math.ceil(x.ply/2)+(game.human==='w'?'.':'...')+' · ¿Qué jugarías ahora y cómo podría responder el rival?';
-  $('exerciseResult').textContent=x.done?`${x.answer.good?'Buena solución.':'Revisa esta idea.'} Tu intento: ${x.answer.san}.\nAlternativa del motor: ${x.answer.bestLine}\nRespuesta a tu intento: ${x.answer.replyLine||'Fin de la partida.'}\nTu previsión: ${x.answer.reason}`:'';
-  $('saveLearning').disabled=!x.done;$('retryExercise').hidden=!x.done;drawBoard();
+  $('exercisePrompt').textContent=exercisePhase==='prelude'?'Mira la jugada del rival: '+x.opponentMove.san+'.':(x.opponentMove?'El rival acaba de jugar '+x.opponentMove.san+'. ':'')+'¿Qué harías ahora? Juegas con '+(game.human==='w'?'blancas':'negras')+'.';
+  $('exerciseResult').textContent=x.answer?x.answer.feedback+(x.answer.good?'\n\nAlternativa calculada: '+x.answer.bestLine:'')+'\n\nIntentos incorrectos en esta posición: '+x.failedAttempts+'.':'';
+  $('exerciseResult').classList.toggle('practice-correct',!!x.answer?.good);$('exerciseResult').classList.toggle('practice-wrong',!!x.answer&&!x.answer.good);
+  $('saveLearning').disabled=!x.done;$('retryExercise').hidden=!x.answer;$('retryExercise').textContent=x.done?'Practicar otra vez':'Reintentar esta posición';drawBoard();
 }
-function selectExercise(i){exerciseIndex=i;reviewFen=null;selected=null;$('exerciseReason').value=game.exercises[i].answer?.reason||'';renderExercise();render();}
+function selectExercise(i){
+ clearTimeout(preludeTimer);exerciseIndex=i;reviewFen=null;selected=null;exercisePreviewFen=null;
+ const x=currentExercise();exercisePhase=x.answer?'feedback':x.beforeOpponentFen?'prelude':'challenge';
+ $('exerciseReason').value=x.answer?.reason||'';renderExercise();render();
+ if(exercisePhase==='prelude')preludeTimer=setTimeout(()=>{if(exerciseIndex!==i||currentExercise()?.ply!==x.ply)return;exercisePhase='challenge';exerciseMotion=x.opponentMove;renderExercise();},700);
+}
+function logPractice(x){
+ const a=x.attempts.at(-1);if(!a)return;const id=game.id+':'+x.ply+':attempt:'+a.number;if(journal.some(j=>j.id===id))return;
+ journal.push({id,date:new Date(a.at).toLocaleDateString('es-CL'),pattern:a.good?'Acierto en ejercicio':'Error en ejercicio',result:a.good?'correct':'incorrect',attempt:a.number,ply:x.ply,fen:x.fen,text:'Jugada '+Math.ceil(x.ply/2)+' · Intento '+a.number+' · '+a.san+'\nMi previsión: '+a.reason+'\n'+a.feedback});store();renderJournal();
+}
 function renderJournal(){ $('journalCount').textContent=journal.length;$('journal').replaceChildren();journal.slice().reverse().slice(0,15).forEach(x=>{const d=document.createElement('div');d.className='journal-entry';const s=document.createElement('small');s.textContent=x.date+' · '+x.pattern;const p=document.createElement('p');p.textContent=x.text;d.append(s,p);$('journal').append(d);}); }
 $('levelMode').onchange=()=>{const estimating=$('levelMode').value==='estimate';$('eloField').hidden=estimating;$('estimateHint').hidden=!estimating;};
 $('start').onclick=()=>work('Preparando la partida y sorteando tu color…',async()=>{const levelMode=$('levelMode').value;game=await api('new',{opponent:$('opponent').value,rating:levelMode==='manual'?Number($('eloInput').value)||350:rating,levelMode});$('rating').textContent=game.rating;flipped=game.human==='b';reviewFen=null;exerciseIndex=null;notice(game.notice);if(game.over)finish();},{natural:true});
@@ -195,9 +226,9 @@ $('flip').onclick=()=>{flipped=!flipped;drawBoard();};
 $('resign').onclick=()=>work('Cerrando la partida…',async()=>{if(!confirm('¿Terminar esta partida por rendición y pasar a la revisión?'))return;game=await api('resign');reviewFen=null;finish();});
 $('retry').onclick=()=>work('El rival está pensando…',async()=>{game=await api('retry');notice(game.notice);if(game.over)finish();},{natural:true});
 $('report').onclick=()=>work('Revisando tus errores y preparando ejercicios reales…',async()=>{game=await api('report',{reflection:$('reflection').value});renderReport();});
-$('practice').onclick=()=>{selectExercise(0);$('exercisePanel').scrollIntoView({behavior:'smooth',block:'nearest'});};
-$('retryExercise').onclick=()=>work('Preparando otro intento…',async()=>{game=await api('retryExercise',{ply:currentExercise().ply});$('exerciseReason').value='';renderExercise();});
-$('returnGame').onclick=()=>{reviewFen=null;exerciseIndex=null;selected=null;$('reviewPanel').hidden=true;$('exercisePanel').hidden=true;render();};
+$('practice').onclick=()=>{selectExercise(0);$('practiceBoardPrompt').scrollIntoView({behavior:'smooth',block:'start'});};
+$('retryExercise').onclick=()=>work('Preparando otro intento…',async()=>{const i=exerciseIndex;game=await api('retryExercise',{ply:currentExercise().ply});selectExercise(i);});
+$('returnGame').onclick=()=>{clearTimeout(preludeTimer);reviewFen=null;exerciseIndex=null;selected=null;$('reviewPanel').hidden=true;$('exercisePanel').hidden=true;render();};
 $('explain').onclick=()=>work('GPT está explicando esta decisión…',async()=>{const ply=game.moves.find(m=>m.afterFen===reviewFen)?.ply;const r=await api('explain',{ply,reflection:$('moveReflection').value});$('explanation').textContent=r.text;});
 $('saveLearning').onclick=()=>{const x=currentExercise();if(!x?.done)return;const id=game.id+':'+x.ply;if(journal.some(j=>j.id===id)){notice('Esta posición ya está guardada en tu cuaderno.');return;}journal.push({id,date:new Date().toLocaleDateString('es-CL'),pattern:$('pattern').value,text:'Jugada '+Math.ceil(x.ply/2)+': '+x.answer.reason+' · Alternativa: '+x.answer.bestLine,fen:x.fen});store();renderJournal();notice('Aprendizaje guardado. Practica el mismo hábito en la próxima partida.');};
 $('newGame').onclick=()=>{game=null;selected=null;reviewFen=null;exerciseIndex=null;['gamePanel','reflectionPanel','reportPanel','reviewPanel','exercisePanel','afterPanel'].forEach(id=>$(id).hidden=true);$('setup').hidden=false;$('reflection').value='';$('step2').classList.remove('active');$('step3').classList.remove('active');$('status').textContent='Listo para jugar';$('humanSub').textContent='Tu color se sortea al empezar';$('opponentName').textContent='Tu rival · IA generativa';$('opponentSub').textContent='Juego razonable, dificultad adaptativa';$('boardMode').textContent='PARTIDA';$('returnGame').hidden=true;$('download').disabled=true;notice(null);drawBoard();};
@@ -212,5 +243,5 @@ function showClocks(){
  $('humanClock').classList.toggle('low',game.clocks[game.human]<60000);$('opponentClock').classList.toggle('low',game.clocks[other]<60000);
 }
 setInterval(()=>{if(!trainer.game)return;const wasOver=game?.over,oldMoves=game?.moves.length,oldId=game?.id;game=trainer.view();if(oldId!==game.id)flipped=game.human==='b';showClocks();showThinking();if(busy&&oldMoves!==game.moves.length)render();if(game.over&&!wasOver){finish();render();}},100);
-const oldNew=$('newGame').onclick;$('newGame').onclick=()=>{trainer.stopClock();trainer.game=null;oldNew();$('eloInput').value=rating;showClocks();};
+const oldNew=$('newGame').onclick;$('newGame').onclick=()=>{clearTimeout(preludeTimer);trainer.stopClock();trainer.game=null;oldNew();$('eloInput').value=rating;showClocks();};
 fillModels();drawBoard();renderJournal();updateConnection();
