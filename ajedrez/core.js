@@ -1,4 +1,6 @@
 import { Chess } from './vendor/chess.js';
+import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
+export {MODEL_PRESETS} from './models.js';
 
 export class BrowserEngine {
   constructor(){ this.queue=Promise.resolve();this.worker=null; }
@@ -62,43 +64,47 @@ export function estimateLevel(moves){
   return {enough:true,samples:evaluated.length,low:range[0],high:range[1],reference:Math.round((range[0]+range[1])/100)*50,
     text:`Rango orientativo de práctica: ${range[0]}–${range[1]}, basado en ${evaluated.length} jugadas propias. Es una regla exploratoria por frecuencia de errores; no está calibrada contra Elo de Chess.com ni Lichess y una partida puede ser poco representativa.`};
 }
-export const MODEL_PRESETS={
-  'gpt-5.6-luna':{input:0.20,output:1.20,effort:'none'},
-  'gpt-5.4-mini':{input:0.75,output:4.50,effort:'none'},
-};
 export class AIConnection {
-  constructor(){this.key='';this.model='gpt-5.6-luna';this.limit=0.02;this.spent=0;this.reserved=0;this.calls=0;this.pending=0;this.rates={...MODEL_PRESETS[this.model]};}
-  configure({key,model,limit,input,output}){
+  constructor(){this.key='';this.provider='openai';this.model='gpt-6-luna';this.limit=0.02;this.spent=0;this.reserved=0;this.calls=0;this.pending=0;this.rates=modelRates(this.model);}
+  configure({key,provider=this.provider,model,limit,input,output}){
     if(this.pending)throw new Error('Espera a que termine la llamada actual.');
-    this.key=key||this.key;this.model=model||this.model;
+    if(!PROVIDERS[provider])throw new Error('Proveedor no disponible.');
+    const nextModel=model||(provider===this.provider?this.model:PROVIDERS[provider].defaultModel);
+    const rates=modelRates(nextModel)||{provider,input:Number(input),output:Number(output),minOutput:2048};
+    if(!nextModel||nextModel.length>120)throw new Error('Indica un modelo válido.');
+    if(rates.provider!==provider)throw new Error('El modelo no corresponde al proveedor seleccionado.');
+    if(!Number.isFinite(rates.input)||!Number.isFinite(rates.output)||rates.input<=0||rates.output<=0)throw new Error('Introduce las tarifas del modelo por millón de tokens.');
+    const nextKey=key||(provider===this.provider?this.key:'');
+    this.key=nextKey;this.model=nextModel;this.provider=provider;this.rates=rates;
     this.limit=Math.max(0,Math.min(5,Number(limit)||0));
-    this.rates=MODEL_PRESETS[this.model]||{input:Math.max(0,Number(input)||0),output:Math.max(0,Number(output)||0)};
-    if(!this.model||this.model.length>120)throw new Error('Indica un modelo válido.');
-    if(this.rates.input<=0||this.rates.output<=0)throw new Error('Introduce las tarifas del modelo por millón de tokens.');
   }
   reset(){if(this.pending)throw new Error('Espera a que termine la llamada actual.');this.spent=0;this.reserved=0;this.calls=0;}
-  usage(){return {usd:this.spent,limit:this.limit,calls:this.calls,model:this.model};}
+  usage(){return {usd:this.spent,limit:this.limit,calls:this.calls,model:this.model,provider:this.provider};}
   async generate(instructions,data,maxOutput=850,{signal}={}){
-    if(!this.key)throw new Error('Conecta tu clave personal de OpenAI arriba a la derecha, o elige el rival sin conexión a GPT.');
+    if(!this.key)throw new Error('Conecta tu clave personal del proveedor arriba a la derecha, o elige el rival sin conexión a GPT.');
     const input=JSON.stringify(data);
-    const reserve=((new TextEncoder().encode(instructions+input).length+2048)*this.rates.input+maxOutput*this.rates.output)/1e6;
+    if(new TextEncoder().encode(instructions+input).length>50000)throw new Error('El texto supera el máximo de esta app. Reduce la reflexión para mantener el cálculo de coste acotado.');
+    const provider=this.provider,model=this.model,key=this.key,rates=modelRates(model)||{...this.rates};
+    maxOutput=Math.max(maxOutput,rates.minOutput||0);
+    const reserve=((new TextEncoder().encode(instructions+input).length+2048)*rates.input+maxOutput*rates.output*(provider==='gemini'?2:1))/1e6;
     if(this.spent+this.reserved+reserve>this.limit||this.calls>=150)throw new Error('Se alcanzó el límite de USD de esta partida. Puedes aumentarlo arriba o continuar con el rival sin conexión a GPT.');
     this.reserved+=reserve;this.calls++;this.pending++;let charged=false;
     try{
-      const body={model:this.model,store:false,instructions,input,max_output_tokens:maxOutput};
-      if(this.rates.effort)body.reasoning={effort:this.rates.effort};
+      const request=buildRequest(provider,model,key,instructions,input,maxOutput,rates);
       const combined=signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000);
-      const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',signal:combined,headers:{Authorization:'Bearer '+this.key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      let response;
+      try{response=await fetch(request.url,{method:'POST',signal:combined,headers:request.headers,body:JSON.stringify(request.body)});}catch(e){if(e.name==='AbortError'||e.name==='TimeoutError')throw e;throw new Error('No se pudo conectar con '+PROVIDERS[provider].name+'. Comprueba la red y si tu cuenta permite llamadas desde navegador.');}
       if(!response.ok){
-        if(response.status===401)throw new Error('La clave de OpenAI no es válida. Revisa la conexión arriba a la derecha.');
-        if(response.status===429)throw new Error('OpenAI limitó la solicitud o la cuenta no tiene saldo. Puedes reintentar o continuar sin conexión a GPT.');
-        throw new Error('OpenAI respondió '+response.status+'. Comprueba el acceso al modelo seleccionado.');
+        if(response.status===401||response.status===403)throw new Error(PROVIDERS[provider].name+' rechazó la conexión. Comprueba tu clave, acceso al modelo y permisos para navegador.');
+        if(response.status===429)throw new Error(PROVIDERS[provider].name+' limitó la solicitud o la cuenta no tiene saldo. Puedes reintentar o continuar sin conexión a GPT.');
+        throw new Error(PROVIDERS[provider].name+' respondió '+response.status+'. Comprueba el acceso al modelo seleccionado.');
       }
       const result=await response.json();
-      if(Number.isFinite(result.usage?.input_tokens)&&Number.isFinite(result.usage?.output_tokens)){
-        this.spent+=(result.usage.input_tokens*this.rates.input+result.usage.output_tokens*this.rates.output)/1e6;charged=true;
+      const parsed=readResponse(provider,result);
+      if(Number.isFinite(parsed.inputTokens)&&Number.isFinite(parsed.outputTokens)){
+        this.spent+=(parsed.inputTokens*rates.input+parsed.outputTokens*rates.output)/1e6;charged=true;
       }
-      const text=(result.output||[]).flatMap(o=>o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text).join('\n').trim();
+      const text=parsed.text;
       if(!text)throw new Error('El modelo no devolvió texto. No se reintenta automáticamente para evitar gasto extra.');
       return text;
     }finally{this.reserved-=reserve;this.pending--;if(!charged)this.spent+=reserve;}

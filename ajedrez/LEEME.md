@@ -8,6 +8,8 @@ El color se sortea. Cada lado dispone de 10 minutos, sin incremento y sin deshac
 
 El reloj se mide en el navegador con tiempo monotónico y sigue corriendo al cambiar de pestaña. Si cierras o recargas se pierde la partida; esta versión no guarda partidas activas. Las tablas por triple repetición y 50 movimientos se adjudican automáticamente. No hay pistas ni evaluaciones durante el juego.
 
+Mientras el rival decide, aparece «Pensando…» junto a su nombre, con puntos animados. Sus piezas se desplazan visualmente de origen a destino (también la torre en un enroque). La selección de otra casilla no reinicia una animación en curso y el sistema respeta la preferencia del navegador de reducir movimiento.
+
 ## Dos rivales
 
 - **IA generativa (usa tokens)**: un modelo de OpenAI elige entre hasta cinco continuaciones verificadas por Stockfish. Se prioriza desarrollo y centro en la apertura, sin excluir jaques, capturas o mates. La IA no puede introducir jugadas arbitrarias ni ilegales.
@@ -19,13 +21,11 @@ Puedes elegir tu Elo de referencia o seleccionar **Estimar mi Elo jugando una pa
 
 ## Conexión y costes
 
-Arriba a la derecha puedes cargar **tu propia clave de OpenAI**, elegir modelo y establecer un límite de USD por partida. La clave queda en memoria durante la sesión, se envía directamente a `api.openai.com` y no se guarda en archivos, cookies ni localStorage. El titular del sitio no publica una clave compartida. Un visitante puede usar el rival gratuito sin una clave.
+Arriba a la derecha puedes elegir OpenAI, Google Gemini o Anthropic, cargar tu propia clave del proveedor y seleccionar un modelo. La clave queda solo en memoria y se envía directamente a su API oficial. No hay una clave compartida del sitio. Cambiar de proveedor requiere su clave correspondiente.
 
-La entrada de una clave prepara la conexión, no hace una llamada de pago ni garantiza acceso al modelo. El acceso real se comprueba al realizar la primera llamada. No introduzcas una clave en copias del sitio que no consideres confiables: cualquier aplicación del navegador que recibe una clave puede leerla durante esa sesión. Usa una clave propia con permisos y gasto acotados en tu cuenta. Para ofrecer una clave compartida sin pedir claves a los visitantes, hace falta un servidor privado o proxy con autenticación, cuotas y control de abuso; GitHub Pages por sí solo no protege un secreto compartido.
+El catálogo actualizado el 13-11-2026 incluye GPT-6/6.1, Gemini 4 Hydrogen, Argon y Carbon, y Claude 5.5 hasta Fable 5.2. El valor económico predeterminado es GPT-6 Luna. Consulta [MODELOS.md](MODELOS.md) para los IDs, tarifas, fuentes, cambios de precio anunciados y limitaciones de acceso desde navegador.
 
-Se ofrecen GPT-5.6 Luna y GPT-5.4 mini, y un nombre de modelo personalizado con tarifas manuales. Disponibilidad según cuenta. Tarifas consultadas el 13-11-2026: Luna US$0,20/1 M entrada y US$1,20/1 M salida; GPT-5.4 mini US$0,75/1 M entrada y US$4,50/1 M salida. Revisa las tarifas oficiales antes de usarlas para presupuestar. [Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [GPT-5.4 mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini).
-
-El límite predeterminado es US$0,02 por partida y se puede cambiar. Antes de una petición se reserva una cota conservadora del texto de entrada y del límite de salida; después se registra el uso informado por la API, sin aplicar descuentos de caché. Si no hay respuesta o uso verificable, se cuenta preventivamente la reserva. No hay reintentos automáticos de pago. El límite es un **freno estimado en este navegador**, no una cuota de facturación de OpenAI. Una recarga lo reinicia y no limita otras páginas o aplicaciones que usen tu clave. Puedes aumentar el límite durante la partida o continuar con el rival local.
+El límite predeterminado es US$0,02 por partida y se puede cambiar. Antes de una petición se reserva una cota conservadora del texto de entrada y del límite de salida; después se registra el uso informado por la API, sin aplicar descuentos de caché. Si no hay respuesta o uso verificable, se cuenta preventivamente la reserva. No hay reintentos automáticos de pago. El límite es un **freno estimado en este navegador**, no una cuota de facturación del proveedor. Una recarga lo reinicia y no limita otras páginas o aplicaciones que usen tu clave. Puedes aumentar el límite durante la partida o continuar con el rival local.
 
 Los informes y explicaciones ya generados se reutilizan. Una partida en el modo sin conexión a GPT no solicita automáticamente informes generativos aunque tengas una clave cargada; una explicación adicional solo usa la IA si la pides explícitamente.
 
