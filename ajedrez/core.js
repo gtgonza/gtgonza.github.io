@@ -1,4 +1,8 @@
 import { Chess } from './vendor/chess.js';
+import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
+import {localReview,exerciseFeedback} from './learning.js';
+import {candidateTraining,PATTERNS} from './training.js';
+export {MODEL_PRESETS} from './models.js';
 
 export class BrowserEngine {
   constructor(){ this.queue=Promise.resolve();this.worker=null; }
@@ -44,7 +48,7 @@ export function classify(before,after,uci,best){
 }
 export function candidateMoves(chess,analysis,rating,ply){
   const tolerance=rating<600?100:rating<1000?65:rating<1400?35:15;
-  let list=analysis.candidates.filter(c=>analysis.cp-c.cp<=tolerance).map(c=>({uci:c.pv[0],san:variation(chess.fen(),[c.pv[0]]),line:variation(chess.fen(),c.pv),cp:c.cp}));
+  let list=analysis.candidates.filter(c=>analysis.cp-c.cp<=tolerance).map(c=>({uci:c.pv[0],san:variation(chess.fen(),[c.pv[0]]),line:variation(chess.fen(),c.pv),pv:c.pv.slice(0,8),cp:c.cp}));
   if(ply<8&&!chess.isCheck()){
     const legal=chess.moves({verbose:true});const development=list.filter(c=>{
       const m=legal.find(m=>m.from+m.to+(m.promotion||'')===c.uci);
@@ -62,43 +66,47 @@ export function estimateLevel(moves){
   return {enough:true,samples:evaluated.length,low:range[0],high:range[1],reference:Math.round((range[0]+range[1])/100)*50,
     text:`Rango orientativo de práctica: ${range[0]}–${range[1]}, basado en ${evaluated.length} jugadas propias. Es una regla exploratoria por frecuencia de errores; no está calibrada contra Elo de Chess.com ni Lichess y una partida puede ser poco representativa.`};
 }
-export const MODEL_PRESETS={
-  'gpt-5.6-luna':{input:0.20,output:1.20,effort:'none'},
-  'gpt-5.4-mini':{input:0.75,output:4.50,effort:'none'},
-};
 export class AIConnection {
-  constructor(){this.key='';this.model='gpt-5.6-luna';this.limit=0.02;this.spent=0;this.reserved=0;this.calls=0;this.pending=0;this.rates={...MODEL_PRESETS[this.model]};}
-  configure({key,model,limit,input,output}){
+  constructor(){this.key='';this.provider='openai';this.model='gpt-6-luna';this.limit=0.02;this.spent=0;this.reserved=0;this.calls=0;this.pending=0;this.rates=modelRates(this.model);}
+  configure({key,provider=this.provider,model,limit,input,output}){
     if(this.pending)throw new Error('Espera a que termine la llamada actual.');
-    this.key=key||this.key;this.model=model||this.model;
+    if(!PROVIDERS[provider])throw new Error('Proveedor no disponible.');
+    const nextModel=model||(provider===this.provider?this.model:PROVIDERS[provider].defaultModel);
+    const rates=modelRates(nextModel)||{provider,input:Number(input),output:Number(output),minOutput:2048};
+    if(!nextModel||nextModel.length>120)throw new Error('Indica un modelo válido.');
+    if(rates.provider!==provider)throw new Error('El modelo no corresponde al proveedor seleccionado.');
+    if(!Number.isFinite(rates.input)||!Number.isFinite(rates.output)||rates.input<=0||rates.output<=0)throw new Error('Introduce las tarifas del modelo por millón de tokens.');
+    const nextKey=key||(provider===this.provider?this.key:'');
+    this.key=nextKey;this.model=nextModel;this.provider=provider;this.rates=rates;
     this.limit=Math.max(0,Math.min(5,Number(limit)||0));
-    this.rates=MODEL_PRESETS[this.model]||{input:Math.max(0,Number(input)||0),output:Math.max(0,Number(output)||0)};
-    if(!this.model||this.model.length>120)throw new Error('Indica un modelo válido.');
-    if(this.rates.input<=0||this.rates.output<=0)throw new Error('Introduce las tarifas del modelo por millón de tokens.');
   }
   reset(){if(this.pending)throw new Error('Espera a que termine la llamada actual.');this.spent=0;this.reserved=0;this.calls=0;}
-  usage(){return {usd:this.spent,limit:this.limit,calls:this.calls,model:this.model};}
+  usage(){return {usd:this.spent,limit:this.limit,calls:this.calls,model:this.model,provider:this.provider};}
   async generate(instructions,data,maxOutput=850,{signal}={}){
-    if(!this.key)throw new Error('Conecta tu clave personal de OpenAI arriba a la derecha, o elige el rival sin conexión a GPT.');
+    if(!this.key)throw new Error('Conecta tu clave personal del proveedor arriba a la derecha, o elige el rival sin conexión a GPT.');
     const input=JSON.stringify(data);
-    const reserve=((new TextEncoder().encode(instructions+input).length+2048)*this.rates.input+maxOutput*this.rates.output)/1e6;
+    if(new TextEncoder().encode(instructions+input).length>50000)throw new Error('El texto supera el máximo de esta app. Reduce la reflexión para mantener el cálculo de coste acotado.');
+    const provider=this.provider,model=this.model,key=this.key,rates=modelRates(model)||{...this.rates};
+    maxOutput=Math.max(maxOutput,rates.minOutput||0);
+    const reserve=((new TextEncoder().encode(instructions+input).length+2048)*rates.input+maxOutput*rates.output*(provider==='gemini'?2:1))/1e6;
     if(this.spent+this.reserved+reserve>this.limit||this.calls>=150)throw new Error('Se alcanzó el límite de USD de esta partida. Puedes aumentarlo arriba o continuar con el rival sin conexión a GPT.');
     this.reserved+=reserve;this.calls++;this.pending++;let charged=false;
     try{
-      const body={model:this.model,store:false,instructions,input,max_output_tokens:maxOutput};
-      if(this.rates.effort)body.reasoning={effort:this.rates.effort};
+      const request=buildRequest(provider,model,key,instructions,input,maxOutput,rates);
       const combined=signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000);
-      const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',signal:combined,headers:{Authorization:'Bearer '+this.key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      let response;
+      try{response=await fetch(request.url,{method:'POST',signal:combined,headers:request.headers,body:JSON.stringify(request.body)});}catch(e){if(e.name==='AbortError'||e.name==='TimeoutError')throw e;throw new Error('No se pudo conectar con '+PROVIDERS[provider].name+'. Comprueba la red y si tu cuenta permite llamadas desde navegador.');}
       if(!response.ok){
-        if(response.status===401)throw new Error('La clave de OpenAI no es válida. Revisa la conexión arriba a la derecha.');
-        if(response.status===429)throw new Error('OpenAI limitó la solicitud o la cuenta no tiene saldo. Puedes reintentar o continuar sin conexión a GPT.');
-        throw new Error('OpenAI respondió '+response.status+'. Comprueba el acceso al modelo seleccionado.');
+        if(response.status===401||response.status===403)throw new Error(PROVIDERS[provider].name+' rechazó la conexión. Comprueba tu clave, acceso al modelo y permisos para navegador.');
+        if(response.status===429)throw new Error(PROVIDERS[provider].name+' limitó la solicitud o la cuenta no tiene saldo. Puedes reintentar o continuar sin conexión a GPT.');
+        throw new Error(PROVIDERS[provider].name+' respondió '+response.status+'. Comprueba el acceso al modelo seleccionado.');
       }
       const result=await response.json();
-      if(Number.isFinite(result.usage?.input_tokens)&&Number.isFinite(result.usage?.output_tokens)){
-        this.spent+=(result.usage.input_tokens*this.rates.input+result.usage.output_tokens*this.rates.output)/1e6;charged=true;
+      const parsed=readResponse(provider,result);
+      if(Number.isFinite(parsed.inputTokens)&&Number.isFinite(parsed.outputTokens)){
+        this.spent+=(parsed.inputTokens*rates.input+parsed.outputTokens*rates.output)/1e6;charged=true;
       }
-      const text=(result.output||[]).flatMap(o=>o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text).join('\n').trim();
+      const text=parsed.text;
       if(!text)throw new Error('El modelo no devolvió texto. No se reintenta automáticamente para evitar gasto extra.');
       return text;
     }finally{this.reserved-=reserve;this.pending--;if(!charged)this.spent+=reserve;}
@@ -113,15 +121,22 @@ export class ChessTrainer {
   runClock(color){this.syncClock();if(!this.isOver()){this.game.running=color;this.game.since=this.now();}}
   stopClock(){this.syncClock();if(this.game)this.game.running=null;}
   setResult(){const g=this.game;if(!g||!this.isOver())return;let result='1/2-1/2';if(g.ended==='resign'||g.ended==='timeout')result=g.loser==='w'?'0-1':'1-0';else if(g.chess.isCheckmate())result=g.chess.turn()==='w'?'0-1':'1-0';g.chess.setHeader('Result',result);g.running=null;}
+  outcome(){
+    const g=this.game;if(!g||!this.isOver())return null;
+    const reason=g.ended||(g.chess.isCheckmate()?'checkmate':'draw');
+    const loser=reason==='checkmate'?g.chess.turn():g.loser||null,winner=loser?(loser==='w'?'b':'w'):null;
+    const kings=g.chess.board().flat().filter(p=>p?.type==='k');
+    return {reason,winner,loser,loserKing:kings.find(p=>p.color===loser)?.square||null,winnerKing:kings.find(p=>p.color===winner)?.square||null};
+  }
   status(){const g=this.game,c=g.chess;if(g.ended==='resign')return 'Te rendiste. Ganan las '+(g.human==='w'?'negras.':'blancas.');if(g.ended==='timeout')return 'Tiempo agotado. Ganan las '+(g.loser==='w'?'negras.':'blancas.');if(c.isCheckmate())return 'Jaque mate. Ganan las '+(c.turn()==='w'?'negras.':'blancas.');if(c.isDraw())return 'Tablas'+(c.isStalemate()?' por ahogado.':c.isThreefoldRepetition()?' por repetición.':c.isInsufficientMaterial()?' por material insuficiente.':' por 50 movimientos.');return (c.turn()===g.human?'Tu turno':'El rival está pensando')+(c.isCheck()?' · Jaque':'');}
-  view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
-    levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
+  view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),outcome:this.outcome(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
+    trainingTarget:g.reviewed?g.trainingTarget:null,levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
     moves:g.moves.map(m=>g.reviewed?{...m}:{ply:m.ply,san:m.san,from:m.from,to:m.to,color:m.color}),notice:g.notice||null,report:g.report||null,
-    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,done:!!x.done,answer:x.done?x.answer:null,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
-  record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};g.moves.push(entry);this.setResult();return entry;}
-  async start({opponent='stockfish',rating=350,color,levelMode='manual'}={}){
+    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,beforeOpponentFen:x.beforeOpponentFen,opponentMove:x.opponentMove,done:!!x.done,answer:x.answer||null,attempts:(x.attempts||[]).map(a=>({...a})),failedAttempts:(x.attempts||[]).filter(a=>!a.good).length,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
+  record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};if(m.color===g.human&&g.pendingChallenge){entry.challenge=g.pendingChallenge;g.pendingChallenge=null;}g.moves.push(entry);this.setResult();return entry;}
+  async start({opponent='stockfish',rating=350,color,levelMode='manual',trainingTarget=null}={}){
     if(opponent==='generative'&&!this.ai.key)throw new Error('Conecta una clave personal para usar el rival generativo. El rival sin conexión a GPT está disponible sin clave.');
-    this.ai.reset();this.game={id:crypto.randomUUID(),chess:new Chess(),human:color||((crypto.getRandomValues(new Uint8Array(1))[0]&1)?'w':'b'),opponent,rating:Math.max(300,Math.min(2000,Number(rating)||350)),levelMode,moves:[],clocks:{w:600000,b:600000},running:null};
+    this.ai.reset();this.game={id:crypto.randomUUID(),chess:new Chess(),human:color||((crypto.getRandomValues(new Uint8Array(1))[0]&1)?'w':'b'),opponent,rating:Math.max(300,Math.min(2000,Number(rating)||350)),levelMode,trainingTarget:trainingTarget&&PATTERNS[trainingTarget.id]?{...trainingTarget}:null,moves:[],clocks:{w:600000,b:600000},running:null};
     try{await this.engine.init();}catch(e){this.game=null;throw e;}this.runClock('w');
     if(this.game.human==='b'){try{await this.reply();}catch(e){this.game.notice=e.message;}}
     return this.view();
@@ -131,18 +146,20 @@ export class ChessTrainer {
     this.runClock(g.chess.turn());
     const a=await this.engine.evaluate(g.chess.fen(),{ms:950,multipv:5,history:g.moves.map(m=>m.uci).join(' ')});
     this.syncClock();if(this.isOver())return;
-    const candidates=candidateMoves(g.chess,a,g.rating,g.moves.length);let uci;
+    const candidates=candidateMoves(g.chess,a,g.rating,g.moves.length).map(c=>({...c,training:candidateTraining(g.chess.fen(),c,g.trainingTarget)}));let uci;
     if(g.opponent==='generative'){
       this.abort=new AbortController();
       try{
-        const text=await this.ai.generate('Juega ajedrez con un principiante. Elige exactamente una jugada UCI de candidates. Crea amenazas coherentes y disputa centro y desarrollo; no hagas regalos deliberados. Adapta complejidad a trainingIndex. Devuelve solo el código de 4 o 5 caracteres.',{fen:g.chess.fen(),trainingIndex:g.rating,candidates,history:g.chess.history().slice(-12)},32,{signal:this.abort.signal});
+        const text=await this.ai.generate('Juega una partida nueva desde la posición inicial contra un principiante. Elige exactamente una jugada UCI de candidates. Crea amenazas coherentes y disputa centro y desarrollo; no hagas regalos deliberados. Si hay trainingTarget, intenta conducir de forma natural hacia ese patrón de debilidad, aprovechando las señales training de los candidatos. Si aún no se puede plantear, prepara un plan coherente; nunca inventes una amenaza ni una jugada fuera de candidates. No repitas una posición antigua ni reduzcas la calidad para montar una trampa. Adapta complejidad a trainingIndex. Devuelve solo el código UCI.',{fen:g.chess.fen(),trainingIndex:g.rating,trainingTarget:g.trainingTarget?{id:g.trainingTarget.id,...PATTERNS[g.trainingTarget.id]}:null,candidates,history:g.chess.history().slice(-16)},32,{signal:this.abort.signal});
         uci=(text.toLowerCase().match(/\b[a-h][1-8][a-h][1-8][qrbn]?\b/g)||[]).find(m=>candidates.some(c=>c.uci===m));
         if(!uci)throw new Error('La IA no eligió una alternativa válida. Puedes reintentar su respuesta.');
       }finally{this.abort=null;}
-    }else uci=candidates[Math.floor(Math.random()*candidates.length)]?.uci;
+    }else{const ranked=[...candidates].sort((a,b)=>b.training.score-a.training.score);uci=g.trainingTarget&&ranked[0]?.training.score>0?ranked[0].uci:candidates[Math.floor(Math.random()*candidates.length)]?.uci;}
     this.syncClock();if(this.isOver())return;
     if(!uci||uci==='(none)')throw new Error('El motor no pudo responder. Reintenta.');
-    this.stopClock();this.record({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});if(!this.isOver())this.runClock(g.human);
+    const chosen=candidates.find(c=>c.uci===uci);this.stopClock();this.record({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
+    if(g.trainingTarget&&chosen?.training.opportunity&&!this.isOver())g.pendingChallenge={id:g.trainingTarget.id,signals:chosen.training.signals,fen:g.chess.fen(),opponentMove:uci};
+    if(!this.isOver())this.runClock(g.human);
   }
   async move(data){this.syncClock();const g=this.game;if(this.isOver()||g.chess.turn()!==g.human)throw new Error('Ahora no puedes mover.');
     const validator=new Chess(g.chess.fen());validator.move({from:data.from,to:data.to,promotion:data.promotion||'q'});
@@ -161,11 +178,12 @@ export class ChessTrainer {
     const mine=g.moves.filter(m=>m.color===g.human);let done=0;
     for(const m of mine){this.onProgress(`Revisando tu jugada ${++done} de ${mine.length}…`);try{Object.assign(m,await this.analyzeEntry(m));}catch(e){m.analysisError=e.message;m.kind='neutral';m.label='Sin evaluar';}}
     const counts=Object.fromEntries(['blunder','mistake','inaccuracy','good','neutral'].map(k=>[k,mine.filter(m=>m.kind===k).length]));
-    const critical=mine.filter(m=>m.loss>=50).sort((a,b)=>b.loss-a.loss).slice(0,3);
-    g.exercises=critical.map(m=>({ply:m.ply,fen:m.beforeFen}));
+    const issues=mine.filter(m=>m.loss>=50).sort((a,b)=>a.ply-b.ply);
+    const critical=issues.length?[issues[0],...issues.slice(1).sort((a,b)=>b.loss-a.loss).slice(0,2)].sort((a,b)=>a.ply-b.ply):[];
+    g.exercises=critical.map(m=>{const prior=g.moves.find(p=>p.ply===m.ply-1);return {ply:m.ply,fen:m.beforeFen,attempts:[],beforeOpponentFen:prior?.beforeFen||null,opponentMove:prior?{from:prior.from,to:prior.to,san:prior.san,color:prior.color}:null};});
     const result=g.chess.getHeaders().Result;const win=result===(g.human==='w'?'1-0':'0-1'),lost=result===(g.human==='w'?'0-1':'1-0');
     const delta=(win?40:lost?-30:5)-Math.min(20,counts.blunder*5);
-    g.report={counts,critical:critical.map(m=>m.ply),missing:mine.filter(m=>m.analysisError).length,source:'Stockfish · revisión local',progress:{before:g.rating,after:Math.max(300,Math.min(2000,g.rating+delta))},text:`En ${mine.length} jugadas propias detecté ${counts.blunder} errores graves, ${counts.mistake} errores y ${counts.inaccuracy} imprecisiones.\n\n${critical.length?'Empieza por la jugada '+Math.ceil(critical[0].ply/2)+(g.human==='w'?'. ':'... ')+critical[0].san+'. Intenta resolver su posición de nuevo antes de mostrar la continuación.':'No hay pérdidas de al menos medio peón entre tus jugadas evaluadas. Puedes revisar tus decisiones seleccionándolas en el registro.'}`};
+    g.report={counts,critical:critical.map(m=>m.ply),missing:mine.filter(m=>m.analysisError).length,source:'Stockfish · revisión local',progress:{before:g.rating,after:Math.max(300,Math.min(2000,g.rating+delta))},text:localReview(mine,counts)};
     if(g.levelMode==='estimate'){
       g.report.estimate=estimateLevel(mine);
       if(g.report.estimate.enough)g.report.progress.after=Math.max(300,Math.min(2000,g.report.estimate.reference));
@@ -185,7 +203,10 @@ export class ChessTrainer {
   async exercise({ply,from,to,promotion,reason}){
     const g=this.game,x=g.exercises?.find(x=>x.ply===Number(ply));if(!this.isOver()||!g.reviewed||!x)throw new Error('Ejercicio no disponible.');if(!String(reason||'').trim())throw new Error('Escribe qué respondería el rival antes de comprobar.');
     const c=new Chess(x.fen),m=c.move({from,to,promotion:promotion||'q'});const before=await this.engine.evaluate(x.fen,{ms:1800}),after=await this.engine.evaluate(c.fen(),{ms:1800});const grade=classify(before,after,m.from+m.to+(m.promotion||''),before.best);
-    x.done=true;x.answer={san:m.san,good:grade.loss<50,...grade,bestLine:variation(x.fen,before.pv),replyLine:variation(c.fen(),after.pv),reason:String(reason).slice(0,1000),afterFen:c.fen()};return this.view();
+    const good=grade.loss<50,feedback=exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen:c.fen(),after,original:g.moves.find(m=>m.ply===x.ply)});
+    const attempt={number:(x.attempts?.length||0)+1,san:m.san,good,feedback,reason:String(reason).slice(0,1000),at:new Date().toISOString()};
+    (x.attempts||=[]).push(attempt);x.done=good;
+    x.answer={san:m.san,from:m.from,to:m.to,color:m.color,good,...grade,...(good?{bestLine:variation(x.fen,before.pv)}:{}),feedback,attemptNumber:attempt.number,replyLine:variation(c.fen(),after.pv),reason:attempt.reason,afterFen:c.fen()};return this.view();
   }
   async request(route,data={}){
     if(route==='config')return {ai:!!this.ai.key,model:this.ai.model,usage:this.ai.usage()};

@@ -6,7 +6,13 @@ Juego de ajedrez y entrenamiento a partir de tus propios errores. Se aloja como 
 
 El color se sortea. Cada lado dispone de 10 minutos, sin incremento y sin deshacer. El reloj del rival incluye su cálculo y la espera de la API. Al terminar, primero escribes tu autoevaluación. El motor revisa tus jugadas y crea hasta tres ejercicios desde las posiciones anteriores a tus mayores pérdidas de evaluación. Cada intento debe incluir la respuesta que esperabas del rival. Los ejercicios no cambian la partida original.
 
+La revisión local cuenta los errores y ofrece una explicación sencilla basada en respuestas legales calculadas: jaques o capturas que aparecían después de tus errores, cuando esa evidencia existe. Señala el primer error detectado y lo incluye entre los ejercicios, junto con hasta dos errores relevantes adicionales. No atribuye motivos tácticos ni carencias personales que el cálculo no permita comprobar.
+
+Al practicar se muestra primero la jugada previa del rival, animada, y después la pregunta «¿Qué harías ahora?». Si la posición corresponde a tu primera jugada, no se inventa una jugada previa. Mueves tu pieza, recibes una explicación y, si fallas, debes reintentar. La mejor alternativa permanece oculta hasta que encuentres una buena solución. Cada intento se añade automáticamente al cuaderno del navegador como correcto o incorrecto: acertar después no borra el primer fallo. El historial ayuda a revisar tus errores; no entrena ni modifica los modelos de IA externos.
+
 El reloj se mide en el navegador con tiempo monotónico y sigue corriendo al cambiar de pestaña. Si cierras o recargas se pierde la partida; esta versión no guarda partidas activas. Las tablas por triple repetición y 50 movimientos se adjudican automáticamente. No hay pistas ni evaluaciones durante el juego.
+
+Mientras el rival decide, aparece «Pensando…» junto a su nombre, con puntos animados. Sus piezas se desplazan visualmente de origen a destino (también la torre en un enroque). La selección de otra casilla no reinicia una animación en curso y el sistema respeta la preferencia del navegador de reducir movimiento.
 
 ## Dos rivales
 
@@ -19,13 +25,11 @@ Puedes elegir tu Elo de referencia o seleccionar **Estimar mi Elo jugando una pa
 
 ## Conexión y costes
 
-Arriba a la derecha puedes cargar **tu propia clave de OpenAI**, elegir modelo y establecer un límite de USD por partida. La clave queda en memoria durante la sesión, se envía directamente a `api.openai.com` y no se guarda en archivos, cookies ni localStorage. El titular del sitio no publica una clave compartida. Un visitante puede usar el rival gratuito sin una clave.
+Arriba a la derecha puedes elegir OpenAI, Google Gemini o Anthropic, cargar tu propia clave del proveedor y seleccionar un modelo. La clave queda solo en memoria y se envía directamente a su API oficial. No hay una clave compartida del sitio. Cambiar de proveedor requiere su clave correspondiente.
 
-La entrada de una clave prepara la conexión, no hace una llamada de pago ni garantiza acceso al modelo. El acceso real se comprueba al realizar la primera llamada. No introduzcas una clave en copias del sitio que no consideres confiables: cualquier aplicación del navegador que recibe una clave puede leerla durante esa sesión. Usa una clave propia con permisos y gasto acotados en tu cuenta. Para ofrecer una clave compartida sin pedir claves a los visitantes, hace falta un servidor privado o proxy con autenticación, cuotas y control de abuso; GitHub Pages por sí solo no protege un secreto compartido.
+El catálogo actualizado el 13-11-2026 incluye GPT-6/6.1, Gemini 4 Hydrogen, Argon y Carbon, y Claude 5.5 hasta Fable 5.2. El valor económico predeterminado es GPT-6 Luna. Consulta [MODELOS.md](MODELOS.md) para los IDs, tarifas, fuentes, cambios de precio anunciados y limitaciones de acceso desde navegador.
 
-Se ofrecen GPT-5.6 Luna y GPT-5.4 mini, y un nombre de modelo personalizado con tarifas manuales. Disponibilidad según cuenta. Tarifas consultadas el 13-11-2026: Luna US$0,20/1 M entrada y US$1,20/1 M salida; GPT-5.4 mini US$0,75/1 M entrada y US$4,50/1 M salida. Revisa las tarifas oficiales antes de usarlas para presupuestar. [Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [GPT-5.4 mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini).
-
-El límite predeterminado es US$0,02 por partida y se puede cambiar. Antes de una petición se reserva una cota conservadora del texto de entrada y del límite de salida; después se registra el uso informado por la API, sin aplicar descuentos de caché. Si no hay respuesta o uso verificable, se cuenta preventivamente la reserva. No hay reintentos automáticos de pago. El límite es un **freno estimado en este navegador**, no una cuota de facturación de OpenAI. Una recarga lo reinicia y no limita otras páginas o aplicaciones que usen tu clave. Puedes aumentar el límite durante la partida o continuar con el rival local.
+El límite predeterminado es US$0,02 por partida y se puede cambiar. Antes de una petición se reserva una cota conservadora del texto de entrada y del límite de salida; después se registra el uso informado por la API, sin aplicar descuentos de caché. Si no hay respuesta o uso verificable, se cuenta preventivamente la reserva. No hay reintentos automáticos de pago. El límite es un **freno estimado en este navegador**, no una cuota de facturación del proveedor. Una recarga lo reinicia y no limita otras páginas o aplicaciones que usen tu clave. Puedes aumentar el límite durante la partida o continuar con el rival local.
 
 Los informes y explicaciones ya generados se reutilizan. Una partida en el modo sin conexión a GPT no solicita automáticamente informes generativos aunque tengas una clave cargada; una explicación adicional solo usa la IA si la pides explícitamente.
 
@@ -44,3 +48,11 @@ La carpeta completa `ajedrez` se puede copiar al sitio de GitHub Pages. Sus enla
 El código de la aplicación se distribuye bajo GPL-3.0. [Stockfish.js 19.0.1](https://github.com/nmrugg/stockfish.js/tree/v19.0.1) está bajo GPL-3.0; archivo `vendor/STOCKFISH-LICENSE`. La compilación distribuida proviene del paquete npm stockfish 19.0.1, sin cambios al motor. Su fuente correspondiente está disponible en el repositorio y etiqueta enlazados. [chess.js 1.4.0](https://github.com/jhlywa/chess.js/tree/v1.4.0) está bajo BSD-2-Clause; archivo `vendor/CHESS-LICENSE`. Copias de las licencias incluidas.
 
 Las piezas SVG usan el diseño Cburnett de Colin M. L. Burnett, GPL-2.0 o posterior, distribuido aquí bajo GPL-3.0; ver `pieces/CREDITOS.md`.
+
+## Partidas nuevas orientadas a tus debilidades
+
+La revisión guarda un perfil local de patrones aproximados: seguridad del rey, piezas expuestas, capturas y cálculo de respuestas. Al empezar una partida normal desde la posición inicial se selecciona un patrón pendiente. Entre las alternativas de Stockfish que ya pasan el filtro habitual de calidad, el rival generativo recibe el objetivo y señales comprobadas para elegir un plan; el rival local prioriza esas señales con reglas. No se amplía la tolerancia ni se carga una posición anterior. No se garantiza que el patrón llegue a aparecer: depende también de tus jugadas.
+
+Solo se contabilizan oportunidades concretas observadas, como un jaque no terminal, una pieza atacada sin defensor directo o una continuación táctica legal en la variante calculada. Son indicadores exploratorios, no una clasificación táctica exhaustiva. Tras revisar la partida se distinguen las respuestas con pérdida inferior a 50 centipeones de las que superan ese umbral. Dos respuestas buenas al patrón pendiente en una partida nueva, sin nuevos errores del mismo patrón, permiten espaciarlo 1, 3, 7, 14, 30 y 60 días. Un fallo vuelve a priorizarlo después de 10 minutos. Los intervalos son una regla de producto pendiente de calibración. Sin oportunidades suficientes no se acredita mejora.
+
+Cada intento de ejercicio persiste, incluido el incorrecto antes de acertar. Resolver un ejercicio no adelanta el repaso en partida. El perfil y su registro de rendimiento se guardan en este navegador; el cuaderno antiguo se conserva, sin convertir notas libres en diagnósticos inventados. La integración se prueba con respuestas simuladas: falta validar la calidad pedagógica de planes generativos en muchas partidas reales.
