@@ -41,6 +41,11 @@ export class BrowserEngine {
   close(){this.worker?.terminate();this.worker=null;}
 }
 export function variation(fen,moves){const c=new Chess(fen),san=[];for(const uci of moves.slice(0,8)){try{san.push(c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]}).san);}catch{break;}}return san.join(' ');}
+export function puzzleLength(fen,pv=[]){
+  const c=new Chess(fen),human=c.turn();let steps=0;
+  for(const uci of pv.slice(0,7)){try{const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});if(m.color===human)steps++;if(c.isGameOver())break;}catch{break;}}
+  return Math.max(1,Math.min(4,steps));
+}
 export function classify(before,after,uci,best){
   const loss=uci===best?0:Math.max(0,before.cp+after.cp);
   if(before.cp < -90000 && after.cp >90000)return {loss:0,label:'Posición perdida',kind:'neutral'};
@@ -132,7 +137,7 @@ export class ChessTrainer {
   view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),outcome:this.outcome(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
     trainingTarget:g.reviewed?g.trainingTarget:null,levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
     moves:g.moves.map(m=>g.reviewed?{...m}:{ply:m.ply,san:m.san,from:m.from,to:m.to,color:m.color}),notice:g.notice||null,report:g.report||null,
-    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,beforeOpponentFen:x.beforeOpponentFen,opponentMove:x.opponentMove,done:!!x.done,answer:x.answer||null,attempts:(x.attempts||[]).map(a=>({...a})),failedAttempts:(x.attempts||[]).filter(a=>!a.good).length,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
+    exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.currentFen||x.fen,rootFen:x.fen,beforeOpponentFen:x.beforeOpponentFen,opponentMove:x.opponentMove,done:!!x.done,targetSteps:x.targetSteps||1,completedSteps:x.completedSteps||0,hintSquare:x.hintSquare||null,answer:x.answer||null,attempts:(x.attempts||[]).map(a=>({...a})),failedAttempts:(x.attempts||[]).filter(a=>!a.good).length,legal:x.done?[]:new Chess(x.currentFen||x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
   record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};if(m.color===g.human&&g.pendingChallenge){entry.challenge=g.pendingChallenge;g.pendingChallenge=null;}g.moves.push(entry);this.setResult();return entry;}
   async start({opponent='stockfish',rating=350,color,levelMode='manual',trainingTarget=null}={}){
     if(opponent==='generative'&&!this.ai.key)throw new Error('Conecta una clave personal para usar el rival generativo. El rival sin conexión a GPT está disponible sin clave.');
@@ -144,7 +149,11 @@ export class ChessTrainer {
   async reply(){
     const g=this.game;if(this.isOver()||g.chess.turn()===g.human)return;
     this.runClock(g.chess.turn());
+    const pending=g.moves.at(-1)?.color===g.human&&!g.moves.at(-1).before?g.moves.at(-1):null;
+    let before;
+    if(pending)try{before=await this.engine.evaluate(pending.beforeFen,{ms:1100,history:g.moves.slice(0,-1).map(m=>m.uci).join(' ')});}catch(e){pending.analysisError=e.message;}
     const a=await this.engine.evaluate(g.chess.fen(),{ms:950,multipv:5,history:g.moves.map(m=>m.uci).join(' ')});
+    if(pending&&before){Object.assign(pending,this.entryAnalysis(pending,before,a));delete pending.analysisError;}
     this.syncClock();if(this.isOver())return;
     const candidates=candidateMoves(g.chess,a,g.rating,g.moves.length).map(c=>({...c,training:candidateTraining(g.chess.fen(),c,g.trainingTarget)}));let uci;
     if(g.opponent==='generative'){
@@ -164,23 +173,28 @@ export class ChessTrainer {
   async move(data){this.syncClock();const g=this.game;if(this.isOver()||g.chess.turn()!==g.human)throw new Error('Ahora no puedes mover.');
     const validator=new Chess(g.chess.fen());validator.move({from:data.from,to:data.to,promotion:data.promotion||'q'});
     this.stopClock();this.record({from:data.from,to:data.to,promotion:data.promotion||'q'});g.notice=null;
-    if(!this.isOver()){try{await this.reply();}catch(e){g.notice=this.isOver()?null:e.message+' Tu jugada quedó confirmada.';}}return this.view();
+    if(!this.isOver()){try{await this.reply();}catch(e){g.notice=this.isOver()?null:e.message+' Tu jugada quedó confirmada.';}}
+    else {const last=g.moves.at(-1);if(last?.color===g.human&&!last.before)try{Object.assign(last,await this.analyzeEntry(last));}catch(e){last.analysisError=e.message;}}
+    return this.view();
   }
+  entryAnalysis(entry,before,after){return {...entry,...classify(before,after,entry.uci,before.best),before,after,best:before.best,bestLine:variation(entry.beforeFen,before.pv),playedLine:variation(entry.afterFen,after.pv),whiteCp:after.cp*(new Chess(entry.afterFen).turn()==='w'?1:-1),depth:Math.min(before.depth||0,after.depth||before.depth)};}
   async analyzeEntry(entry,ms=1100){
     const g=this.game,history=g.moves.slice(0,entry.ply).map(m=>m.uci);
     const before=await this.engine.evaluate(entry.beforeFen,{ms,history:history.slice(0,-1).join(' ')});
     const after=await this.engine.evaluate(entry.afterFen,{ms,history:history.join(' ')});
-    return {...entry,...classify(before,after,entry.uci,before.best),before,after,best:before.best,bestLine:variation(entry.beforeFen,before.pv),playedLine:variation(entry.afterFen,after.pv),whiteCp:after.cp*(new Chess(entry.afterFen).turn()==='w'?1:-1),depth:Math.min(before.depth||0,after.depth||before.depth)};
+    return this.entryAnalysis(entry,before,after);
   }
   async report(reflection){
-    const g=this.game;if(!this.isOver())throw new Error('Termina la partida para revisarla.');if(!String(reflection||'').trim())throw new Error('Antes de ver el motor, escribe dónde crees que te equivocaste.');
-    if(g.report)return this.view();g.reflection=String(reflection).slice(0,2000);g.reviewed=true;
+    const g=this.game;if(!this.isOver())throw new Error('Termina la partida para revisarla.');
+    if(g.report){this.onProgress('Revisión lista',100);return this.view();}g.reflection=String(reflection||'').slice(0,2000);
+    this.onProgress('Recuperando el análisis de la partida…',0);
     const mine=g.moves.filter(m=>m.color===g.human);let done=0;
-    for(const m of mine){this.onProgress(`Revisando tu jugada ${++done} de ${mine.length}…`);try{Object.assign(m,await this.analyzeEntry(m));}catch(e){m.analysisError=e.message;m.kind='neutral';m.label='Sin evaluar';}}
+    for(const m of mine){if(!m.before||!m.after)try{Object.assign(m,await this.analyzeEntry(m));delete m.analysisError;}catch(e){m.analysisError=e.message;m.kind='neutral';m.label='Sin evaluar';}this.onProgress('Organizando tus decisiones…',Math.round(++done/Math.max(1,mine.length)*65));}
     const counts=Object.fromEntries(['blunder','mistake','inaccuracy','good','neutral'].map(k=>[k,mine.filter(m=>m.kind===k).length]));
     const issues=mine.filter(m=>m.loss>=50).sort((a,b)=>a.ply-b.ply);
     const critical=issues.length?[issues[0],...issues.slice(1).sort((a,b)=>b.loss-a.loss).slice(0,2)].sort((a,b)=>a.ply-b.ply):[];
-    g.exercises=critical.map(m=>{const prior=g.moves.find(p=>p.ply===m.ply-1);return {ply:m.ply,fen:m.beforeFen,attempts:[],beforeOpponentFen:prior?.beforeFen||null,opponentMove:prior?{from:prior.from,to:prior.to,san:prior.san,color:prior.color}:null};});
+    g.exercises=critical.map(m=>{const prior=g.moves.find(p=>p.ply===m.ply-1);return {ply:m.ply,fen:m.beforeFen,targetSteps:puzzleLength(m.beforeFen,m.before?.pv),completedSteps:0,attempts:[],beforeOpponentFen:prior?.beforeFen||null,opponentMove:prior?{from:prior.from,to:prior.to,san:prior.san,color:prior.color}:null};});
+    this.onProgress('Preparando los puzles del rival…',80);
     const result=g.chess.getHeaders().Result;const win=result===(g.human==='w'?'1-0':'0-1'),lost=result===(g.human==='w'?'0-1':'1-0');
     const delta=(win?40:lost?-30:5)-Math.min(20,counts.blunder*5);
     g.report={counts,critical:critical.map(m=>m.ply),missing:mine.filter(m=>m.analysisError).length,source:'Stockfish · revisión local',progress:{before:g.rating,after:Math.max(300,Math.min(2000,g.rating+delta))},text:localReview(mine,counts)};
@@ -189,9 +203,9 @@ export class ChessTrainer {
       if(g.report.estimate.enough)g.report.progress.after=Math.max(300,Math.min(2000,g.report.estimate.reference));
     }
     if(this.ai.key&&g.opponent==='generative'&&mine.length){
-      this.onProgress('Preparando la explicación de IA y los ejercicios…');
-      try{g.report.text=await this.ai.generate('Eres un entrenador de ajedrez. Analiza errores para un principiante, en español claro, hasta 380 palabras. Parte de su autoevaluación sin atribuirle pensamientos como hechos. Concéntrate en un error importante y hasta tres momentos críticos reales. Usa solo FEN y variantes verificadas. No inventes amenazas. No reveles las mejores jugadas ni variantes: primero resolverá ejercicios. Indica números de jugada y preguntas concretas. Distingue error táctico y de planificación si hay evidencia. Termina con una tarea breve para la próxima partida. Texto plano.',{human:g.human,reflection:g.reflection,counts,result,moments:critical.map(({before,after,...m})=>m)},850);g.report.source='IA generativa + Stockfish';}catch(e){g.report.warning=e.message+' Se conserva el análisis local sin coste de motor.';}
-    }return this.view();
+      this.onProgress('Preparando la explicación de IA…',90);
+      try{g.report.text=await this.ai.generate('Eres un entrenador de ajedrez. Analiza errores para un principiante, en español claro, hasta 380 palabras. Concéntrate en un error importante y hasta tres momentos críticos reales. Usa solo FEN y variantes verificadas. No inventes amenazas ni pensamientos del jugador. No reveles las mejores jugadas ni variantes: primero resolverá puzles. Indica números de jugada y preguntas concretas. Distingue error táctico y de planificación si hay evidencia. Termina con una tarea breve para la próxima partida. Texto plano.',{human:g.human,counts,result,moments:critical.map(({before,after,...m})=>m)},850);g.report.source='IA generativa + Stockfish';}catch(e){g.report.warning=e.message+' Se conserva el análisis local sin coste de motor.';}
+    }g.reviewed=true;this.onProgress('Revisión lista',100);return this.view();
   }
   async explain({ply,reflection}){
     const g=this.game;if(!this.isOver()||!g.reviewed)throw new Error('Primero termina la partida y revisa tus errores.');if(!String(reflection||'').trim())throw new Error('Escribe primero qué respuesta del rival no viste.');
@@ -201,13 +215,26 @@ export class ChessTrainer {
     return {text:m.explanation,usage:this.ai.usage()};
   }
   async exercise({ply,from,to,promotion,reason}){
-    const g=this.game,x=g.exercises?.find(x=>x.ply===Number(ply));if(!this.isOver()||!g.reviewed||!x)throw new Error('Ejercicio no disponible.');if(!String(reason||'').trim())throw new Error('Escribe qué respondería el rival antes de comprobar.');
-    const c=new Chess(x.fen),m=c.move({from,to,promotion:promotion||'q'});const before=await this.engine.evaluate(x.fen,{ms:1800}),after=await this.engine.evaluate(c.fen(),{ms:1800});const grade=classify(before,after,m.from+m.to+(m.promotion||''),before.best);
-    const good=grade.loss<50,feedback=exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen:c.fen(),after,original:g.moves.find(m=>m.ply===x.ply)});
-    const attempt={number:(x.attempts?.length||0)+1,san:m.san,good,feedback,reason:String(reason).slice(0,1000),at:new Date().toISOString()};
-    (x.attempts||=[]).push(attempt);x.done=good;
-    x.answer={san:m.san,from:m.from,to:m.to,color:m.color,good,...grade,...(good?{bestLine:variation(x.fen,before.pv)}:{}),feedback,attemptNumber:attempt.number,replyLine:variation(c.fen(),after.pv),reason:attempt.reason,afterFen:c.fen()};return this.view();
+    const g=this.game,x=this.puzzle(ply);if(x.done)throw new Error('Este puzle ya está resuelto. Puedes reiniciarlo.');
+    const fen=x.currentFen||x.fen,c=new Chess(fen),m=c.move({from,to,promotion:promotion||'q'}),afterFen=c.fen();
+    const before=x.cached?.fen===fen?x.cached.analysis:await this.engine.evaluate(fen,{ms:1800}),after=await this.engine.evaluate(afterFen,{ms:1800});const grade=classify(before,after,m.from+m.to+(m.promotion||''),before.best);
+    const good=grade.loss<50,step=(x.completedSteps||0)+1;
+    let opponentMove=null;
+    if(good&&step<(x.targetSteps||1)&&!c.isGameOver()){
+      const uci=after.best||after.pv?.[0];if(!uci)throw new Error('No se pudo calcular la respuesta del rival. Intenta de nuevo.');
+      const reply=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});opponentMove={from:reply.from,to:reply.to,san:reply.san,color:reply.color};
+    }
+    let feedback=exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen,after,original:step===1?g.moves.find(m=>m.ply===x.ply):null});
+    const done=good&&(step>=(x.targetSteps||1)||c.isGameOver());
+    const remaining=(x.targetSteps||1)-step;
+    if(good)feedback+=(done?'\n\nPuzle resuelto.'+(step<(x.targetSteps||1)?' La secuencia termina antes porque la posición ya es terminal.':''):'\n\nBuena decisión. El rival responde '+opponentMove.san+'. Continúa: '+(remaining===1?'falta 1 jugada tuya.':'faltan '+remaining+' jugadas tuyas.'));
+    const attempt={number:(x.attempts?.length||0)+1,step,fen,san:m.san,good,hinted:!!x.hintSquare,feedback,reason:String(reason||'').slice(0,1000),at:new Date().toISOString()};
+    (x.attempts||=[]).push(attempt);x.done=done;
+    if(good){x.completedSteps=step;x.currentFen=c.fen();x.hintSquare=null;x.cached=null;}
+    x.answer={san:m.san,from:m.from,to:m.to,color:m.color,good,...grade,...(done?{bestLine:variation(fen,before.pv)}:{}),feedback,attemptNumber:attempt.number,replyLine:done?variation(afterFen,after.pv):null,reason:attempt.reason,afterFen,opponentMove};return this.view();
   }
+  puzzle(ply){const g=this.game,x=g?.exercises?.find(x=>x.ply===Number(ply));if(!this.isOver()||!g.reviewed||!x)throw new Error('Puzle no disponible.');return x;}
+  async hint(ply){const x=this.puzzle(ply);if(x.done)throw new Error('El puzle ya está resuelto.');const fen=x.currentFen||x.fen;const analysis=x.cached?.fen===fen?x.cached.analysis:await this.engine.evaluate(fen,{ms:1800});const c=new Chess(fen),uci=analysis.best;if(!uci)throw new Error('No hay una pista disponible.');const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});x.cached={fen,analysis};x.hintSquare=m.from;return this.view();}
   async request(route,data={}){
     if(route==='config')return {ai:!!this.ai.key,model:this.ai.model,usage:this.ai.usage()};
     if(route==='connect'){this.ai.configure(data);return {ai:!!this.ai.key,model:this.ai.model,usage:this.ai.usage()};}
@@ -228,9 +255,10 @@ export class ChessTrainer {
       }
       if(route==='explain')return await this.explain(data);
       if(route==='exercise')return await this.exercise(data);
+      if(route==='hint')return await this.hint(data.ply);
       if(route==='retryExercise'){
-        const x=this.game.exercises?.find(x=>x.ply===Number(data.ply));if(!this.isOver()||!x)throw new Error('Ejercicio no disponible.');
-        x.done=false;x.answer=null;return this.view();
+        const x=this.puzzle(data.ply);
+        x.done=false;x.answer=null;x.currentFen=x.fen;x.completedSteps=0;x.hintSquare=null;x.cached=null;return this.view();
       }
       throw new Error('Operación no disponible.');
     }finally{this.busy=false;}

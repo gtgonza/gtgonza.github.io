@@ -1,18 +1,18 @@
-# Entre jugadas
+# Between Bishops · BB
 
 Juego de ajedrez y entrenamiento a partir de tus propios errores. Se aloja como HTML, CSS, JavaScript y WebAssembly en GitHub Pages, sin un servidor de la aplicación.
 
 ## Partida → revisión → ejercicios
 
-El color se sortea. Cada lado dispone de 10 minutos, sin incremento y sin deshacer. El reloj del rival incluye su cálculo y la espera de la API. Al terminar, primero escribes tu autoevaluación. El motor revisa tus jugadas y crea hasta tres ejercicios desde las posiciones anteriores a tus mayores pérdidas de evaluación. Cada intento debe incluir la respuesta que esperabas del rival. Los ejercicios no cambian la partida original.
+El color se sortea. Cada lado dispone de 10 minutos, sin incremento y sin deshacer. El reloj del rival incluye su cálculo, el análisis oculto de tu última jugada y la espera de la API. Al terminar puedes elegir **Revisar partida** o **Jugar nuevamente**, sin escribir una autoevaluación. La revisión reutiliza los análisis guardados durante la partida y muestra una barra de progreso por etapas hasta el 100%. Si algún cálculo falló, intenta recuperar solo ese análisis. Crea hasta tres puzles desde posiciones anteriores a tus errores. Los puzles no cambian la partida original.
 
 La revisión local cuenta los errores y ofrece una explicación sencilla basada en respuestas legales calculadas: jaques o capturas que aparecían después de tus errores, cuando esa evidencia existe. Señala el primer error detectado y lo incluye entre los ejercicios, junto con hasta dos errores relevantes adicionales. No atribuye motivos tácticos ni carencias personales que el cálculo no permita comprobar.
 
-Al practicar se muestra primero la jugada previa del rival, animada, y después la pregunta «¿Qué harías ahora?». Si la posición corresponde a tu primera jugada, no se inventa una jugada previa. Mueves tu pieza, recibes una explicación y, si fallas, debes reintentar. La mejor alternativa permanece oculta hasta que encuentres una buena solución. Cada intento se añade automáticamente al cuaderno del navegador como correcto o incorrecto: acertar después no borra el primer fallo. El historial ayuda a revisar tus errores; no entrena ni modifica los modelos de IA externos.
+Cada puzle indica su longitud, de una a cuatro jugadas tuyas según la variante legal disponible. Se muestra primero la jugada previa del rival, animada, y después la pregunta «¿Qué harías ahora?». Si corresponde a tu primera jugada, no se inventa una jugada previa. Una buena jugada conserva una pérdida inferior a 50 centipeones; se aceptan alternativas razonables. El rival responde y continúas hasta completar la secuencia o terminar la posición. La solución completa permanece oculta hasta resolver el puzle. Si fallas, origen y destino se tiñen de rojo tenue durante un instante y el tablero vuelve al paso pendiente. **Reiniciar puzle** vuelve al inicio sin borrar intentos; **Pista** destaca en azul la pieza recomendada, sin señalar el destino. Los intentos con pista también quedan identificados. Cada intento se añade automáticamente al cuaderno como correcto o incorrecto: acertar después no borra el fallo. El historial no entrena ni modifica los modelos de IA externos.
 
 El reloj se mide en el navegador con tiempo monotónico y sigue corriendo al cambiar de pestaña. Si cierras o recargas se pierde la partida; esta versión no guarda partidas activas. Las tablas por triple repetición y 50 movimientos se adjudican automáticamente. No hay pistas ni evaluaciones durante el juego.
 
-Mientras el rival decide, aparece «Pensando…» junto a su nombre, con puntos animados. Sus piezas se desplazan visualmente de origen a destino (también la torre en un enroque). La selección de otra casilla no reinicia una animación en curso y el sistema respeta la preferencia del navegador de reducir movimiento.
+Mientras el rival calcula, analiza tu jugada o espera la API, aparece **Pensando…** en una franja neutra y visible sobre el tablero, con puntos animados. El reloj activo usa gris oscuro. Las piezas se desplazan visualmente de origen a destino (también la torre en un enroque). La selección de otra casilla no reinicia una animación en curso y el sistema respeta la preferencia del navegador de reducir movimiento.
 
 ## Dos rivales
 
@@ -35,7 +35,7 @@ Los informes y explicaciones ya generados se reutilizan. Una partida en el modo 
 
 ## Motor y análisis
 
-Stockfish 19 lite single-threaded funciona en un Web Worker. El motor evalúa las alternativas durante unos 950 ms por turno. La revisión final analiza cada posición durante unos 1.100 ms y los ejercicios durante 1.800 ms. Una partida larga puede tardar uno o dos minutos en revisar; la pantalla muestra el progreso.
+Stockfish 19 lite single-threaded funciona en un Web Worker. Durante el turno del rival evalúa la posición anterior a tu jugada durante unos 1.100 ms y la posición posterior durante unos 950 ms; esta última búsqueda también proporciona los candidatos del rival. Ambos resultados se guardan y quedan ocultos hasta la revisión. Una jugada tuya que termina la partida también se analiza antes de cerrar la operación. Los puzles usan búsquedas de 1.800 ms antes y después de cada intento; una pista reutiliza su análisis para el siguiente intento. El porcentaje final corresponde a las etapas de recopilación, preparación de puzles y explicación, no a un temporizador ficticio. La explicación generativa puede requerir esperar la API.
 
 Etiquetas orientativas: imprecisión desde 50 centipeones, error desde 100 y error grave desde 200. Dependen de la búsqueda y no sustituyen un análisis profundo. Los valores positivos favorecen a blancas. La IA recibe las variantes calculadas para explicar, pero sus interpretaciones pueden contener errores. La conexión a la API debe probarse con una clave válida y acceso al modelo; las pruebas del proyecto simulan respuestas y no generan cargos.
 
@@ -47,7 +47,7 @@ La carpeta completa `ajedrez` se puede copiar al sitio de GitHub Pages. Sus enla
 
 El código de la aplicación se distribuye bajo GPL-3.0. [Stockfish.js 19.0.1](https://github.com/nmrugg/stockfish.js/tree/v19.0.1) está bajo GPL-3.0; archivo `vendor/STOCKFISH-LICENSE`. La compilación distribuida proviene del paquete npm stockfish 19.0.1, sin cambios al motor. Su fuente correspondiente está disponible en el repositorio y etiqueta enlazados. [chess.js 1.4.0](https://github.com/jhlywa/chess.js/tree/v1.4.0) está bajo BSD-2-Clause; archivo `vendor/CHESS-LICENSE`. Copias de las licencias incluidas.
 
-Las piezas SVG usan el diseño Cburnett de Colin M. L. Burnett, GPL-2.0 o posterior, distribuido aquí bajo GPL-3.0; ver `pieces/CREDITOS.md`.
+El logo de alfil adapta los colores de la pieza del mismo diseño. Las piezas SVG usan el diseño Cburnett de Colin M. L. Burnett, GPL-2.0 o posterior, distribuido aquí bajo GPL-3.0; ver `pieces/CREDITOS.md`.
 
 ## Partidas nuevas orientadas a tus debilidades
 
