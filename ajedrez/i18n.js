@@ -4,6 +4,7 @@ export const getLanguage=()=>language;
 export function setLanguage(value){if(!['en','es'].includes(value))return;language=value;try{localStorage.setItem('between-bishops-language',value);}catch{}if(typeof document!=='undefined')document.documentElement.lang=value;}
 const phrases={
 'Idioma':'Language',
+'Cambiar a español':'Switch to Spanish','Cambiar a inglés':'Switch to English',
 'Between Bishops · Ajedrez con IA':'Between Bishops · Learn from your mistakes',
 'APRENDE DE TUS ERRORES':'LEARN FROM YOUR MISTAKES',
 'Aprende de tus errores':'Learn from your mistakes',

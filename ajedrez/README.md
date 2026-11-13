@@ -29,7 +29,7 @@ Only concrete, observed opportunities are scored after a game. Two good response
 
 ## Language, data and API costs
 
-English is the initial language. Use **English / Español** in the header to switch. The preference is saved in this browser. Local reviews and puzzle feedback are available in both languages. AI explanations are requested in the selected language. Switching languages does not make a paid request: if a generated review exists only in the other language, the local engine review is shown instead.
+English is the initial language. Click the flag button (**EN / ES**) in the header to switch between English and Spanish. The preference is saved in this browser. Local reviews and puzzle feedback are available in both languages. AI explanations are requested in the selected language. Switching languages does not make a paid request: if a generated review exists only in the other language, the local engine review is shown instead.
 
 Your mistake journal, training profile and practice index remain in this browser. They are not synced and are lost if site data is cleared. A language change preserves them. Download the game's PGN to keep its moves. Historical personal notes stay in the language in which they were written.
 

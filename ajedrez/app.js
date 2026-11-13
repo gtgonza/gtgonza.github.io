@@ -31,11 +31,11 @@ async function api(route,data={}){
 async function work(message, fn, {natural=false}={}) {
   if (busy) return;
   busy = true;$('language').disabled=true;quietThinking=natural; $('busyText').textContent = message; $('busy').hidden = natural;showThinking();
-  document.querySelectorAll('button').forEach(b => { b.dataset.wasDisabled = b.disabled ? '1' : ''; b.disabled = true; });
+  document.querySelectorAll('button:not(#language)').forEach(b => { b.dataset.wasDisabled = b.disabled ? '1' : ''; b.disabled = true; });
   try { await fn(); } catch (e) { notice(e.message); if(!trainer.ai.key&&e.message.includes('clave')) $('aiSettings').open=true; }
   finally {
     busy = false;$('language').disabled=false;quietThinking=false; $('busy').hidden = true;showThinking();
-    document.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.wasDisabled === '1'; });
+    document.querySelectorAll('button:not(#language)').forEach(b => { b.disabled = b.dataset.wasDisabled === '1'; });
     if (game) render(); else drawBoard();
     showClocks();
     if(game?.report) $('practice').disabled=!game.exercises.length;
@@ -270,12 +270,12 @@ fillModels();drawBoard();renderJournal();renderTraining();updateConnection();
 const localization=installLocalization();
 $('language').value=getLanguage();
 function applyLanguage(value){
- setLanguage(value);trainer.language=value;$('helpLink').href=value==='en'?'./README.md':'./LEEME.md';
+ setLanguage(value);trainer.language=value;$('language').value=value;$('languageFlag').src='./flags/'+value+'.svg';$('languageFlag').alt=value==='en'?'English':'Español';$('languageCode').textContent=value.toUpperCase();const languageAction=value==='en'?'Cambiar a español':'Cambiar a inglés';$('language').title=languageAction;$('language').setAttribute('aria-label',languageAction);$('helpLink').href=value==='en'?'./README.md':'./LEEME.md';
  if(trainer.game)game=trainer.view();
  if(game?.report)renderReport();if(currentExercise())renderExercise();if(game)render();
  renderJournal();renderTraining();
  if(reviewFen){const entry=game?.moves.find(m=>m.afterFen===reviewFen);$('explanation').textContent=entry?.explanation||'';}
  localization.refresh();
 }
-$('language').onchange=()=>applyLanguage($('language').value);
+$('language').onclick=()=>applyLanguage(getLanguage()==='en'?'es':'en');
 applyLanguage(getLanguage());

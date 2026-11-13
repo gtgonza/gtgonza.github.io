@@ -59,4 +59,4 @@ Cada intento de ejercicio persiste, incluido el incorrecto antes de acertar. Res
 
 ## Idioma
 
-Inglés es el idioma inicial. El selector English / Español guarda la preferencia en este navegador y conserva el historial. Las revisiones locales y el feedback de puzles están disponibles en ambos idiomas. La IA responde en el idioma elegido. Cambiar idioma no realiza llamadas de pago: si la revisión generativa solo existe en el otro idioma, se muestra la revisión local. Las notas personales anteriores conservan su idioma original. [English](README.md).
+Inglés es el idioma inicial. El botón con banderita EN / ES alterna entre inglés y español y guarda la preferencia en este navegador y conserva el historial. Las revisiones locales y el feedback de puzles están disponibles en ambos idiomas. La IA responde en el idioma elegido. Cambiar idioma no realiza llamadas de pago: si la revisión generativa solo existe en el otro idioma, se muestra la revisión local. Las notas personales anteriores conservan su idioma original. [English](README.md).
