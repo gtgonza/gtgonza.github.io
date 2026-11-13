@@ -2,6 +2,8 @@ import { ChessTrainer } from './core.js';
 import { PROVIDERS, MODEL_PRESETS, modelRates, CATALOG_DATE } from './models.js';
 import {Chess} from './vendor/chess.js';
 import {TrainingProfile} from './training.js';
+import {getLanguage,setLanguage,translate,installLocalization} from './i18n.js';
+const locale=()=>getLanguage()==='en'?'en-US':'es-CL';
 const $ = id => document.getElementById(id);
 const symbols = { k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟' };
 const names = { k:'rey',q:'dama',r:'torre',b:'alfil',n:'caballo',p:'peón' };
@@ -16,7 +18,7 @@ $('rating').textContent = rating;
 $('eloInput').value=rating;
 function store() { try { localStorage.setItem('entre-jugadas-journal',JSON.stringify(journal)); localStorage.setItem('entre-jugadas-rating',String(rating)); localStorage.setItem('entre-jugadas-training',JSON.stringify(profile.export())); } catch { notice('No se pudo guardar el cuaderno en este navegador.'); } }
 function notice(text) { $('notice').textContent = text || ''; $('notice').hidden = !text; }
-const trainer = new ChessTrainer({onProgress:(message,percent)=>{ $('busyText').textContent=message;if(Number.isFinite(percent)){$('analysisProgress').hidden=false;$('analysisBar').value=percent;$('analysisPercent').textContent=percent+'%';$('analysisMessage').textContent=message;} }});
+const trainer = new ChessTrainer({language:getLanguage(),onProgress:(message,percent)=>{ $('busyText').textContent=message;if(Number.isFinite(percent)){$('analysisProgress').hidden=false;$('analysisBar').value=percent;$('analysisPercent').textContent=percent+'%';$('analysisMessage').textContent=message;} }});
 function updateConnection(){
   const u=trainer.ai.usage();
   $('connection').textContent=trainer.ai.key?PROVIDERS[trainer.ai.provider].name+' · clave cargada':'IA generativa · conectar';
@@ -28,11 +30,11 @@ async function api(route,data={}){
 }
 async function work(message, fn, {natural=false}={}) {
   if (busy) return;
-  busy = true;quietThinking=natural; $('busyText').textContent = message; $('busy').hidden = natural;showThinking();
+  busy = true;$('language').disabled=true;quietThinking=natural; $('busyText').textContent = message; $('busy').hidden = natural;showThinking();
   document.querySelectorAll('button').forEach(b => { b.dataset.wasDisabled = b.disabled ? '1' : ''; b.disabled = true; });
   try { await fn(); } catch (e) { notice(e.message); if(!trainer.ai.key&&e.message.includes('clave')) $('aiSettings').open=true; }
   finally {
-    busy = false;quietThinking=false; $('busy').hidden = true;showThinking();
+    busy = false;$('language').disabled=false;quietThinking=false; $('busy').hidden = true;showThinking();
     document.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.wasDisabled === '1'; });
     if (game) render(); else drawBoard();
     showClocks();
@@ -201,7 +203,7 @@ function selectExercise(i){
 function logPractice(x){
  const a=x.attempts.at(-1);if(!a)return;const id=game.id+':'+x.ply+':attempt:'+a.number;if(journal.some(j=>j.id===id))return;
  const source=game.moves.find(m=>m.ply===x.ply);if(source)profile.exercise(source,a,game.id);
- journal.push({id,date:new Date(a.at).toLocaleDateString('es-CL'),pattern:a.good?'Acierto en puzle':'Error en puzle',result:a.good?'correct':'incorrect',attempt:a.number,ply:x.ply,fen:a.fen||x.rootFen,hinted:a.hinted,step:a.step,text:'Jugada '+Math.ceil(x.ply/2)+' · Paso '+(a.step||1)+' · Intento '+a.number+' · '+a.san+(a.hinted?' · Con pista':'')+'\n'+a.feedback});store();renderJournal();renderTraining();
+ journal.push({id,date:new Date(a.at).toLocaleDateString(locale()),pattern:a.good?'Acierto en puzle':'Error en puzle',result:a.good?'correct':'incorrect',attempt:a.number,ply:x.ply,fen:a.fen||x.rootFen,hinted:a.hinted,step:a.step,san:a.san,feedbackTexts:a.feedbackTexts,text:'Jugada '+Math.ceil(x.ply/2)+' · Paso '+(a.step||1)+' · Intento '+a.number+' · '+a.san+(a.hinted?' · Con pista':'')+'\n'+a.feedback});store();renderJournal();renderTraining();
 }
 function renderTraining(){
  const target=profile.target();$('trainingPlan').textContent=target?'Próxima partida: el rival intentará crear situaciones de «'+target.label.toLowerCase()+'» desde una partida nueva, entre jugadas razonables. No siempre será posible.':'Cada partida empieza desde cero. Al revisar tus errores, el rival podrá orientar futuras partidas hacia tus debilidades cuando toque repasarlas.';
@@ -209,10 +211,10 @@ function renderTraining(){
  const stats=profile.stats();$('performanceEmpty').hidden=!!stats.length;
  for(const p of stats){const entry=document.createElement('div');entry.className='journal-entry';const title=document.createElement('strong');title.textContent=p.label;
  const numbers=document.createElement('p');numbers.textContent=`Errores detectados: ${p.mistakes}. En partidas nuevas: ${p.gameGood} respuestas buenas y ${p.gameBad} con error. En ejercicios: ${p.exerciseGood} aciertos y ${p.exerciseBad} intentos incorrectos.`;
- const schedule=document.createElement('small');schedule.textContent='Etapa de repaso '+p.stage+'/6 · '+(p.due?'Pendiente': 'Próximo: '+new Date(p.dueAt).toLocaleString('es-CL'));
+ const schedule=document.createElement('small');schedule.textContent='Etapa de repaso '+p.stage+'/6 · '+(p.due?'Pendiente': 'Próximo: '+new Date(p.dueAt).toLocaleString(locale()));
  entry.append(title,numbers,schedule);list.append(entry);}
 }
-function renderJournal(){ $('journalCount').textContent=journal.length;$('journal').replaceChildren();journal.slice().reverse().slice(0,15).forEach(x=>{const d=document.createElement('div');d.className='journal-entry';const s=document.createElement('small');s.textContent=x.date+' · '+x.pattern;const p=document.createElement('p');p.textContent=x.text;d.append(s,p);$('journal').append(d);}); }
+function renderJournal(){ $('journalCount').textContent=journal.length;$('journal').replaceChildren();journal.slice().reverse().slice(0,15).forEach(x=>{const d=document.createElement('div');d.className='journal-entry';const s=document.createElement('small');s.textContent=x.date+' · '+x.pattern;const p=document.createElement('p');p.textContent=x.feedbackTexts?'Jugada '+Math.ceil(x.ply/2)+' · Paso '+(x.step||1)+' · Intento '+x.attempt+' · '+x.san+(x.hinted?' · Con pista':'')+'\n'+x.feedbackTexts[getLanguage()]:x.text;if(!x.result)p.dataset.noTranslate='true';d.append(s,p);$('journal').append(d);}); }
 $('levelMode').onchange=()=>{const estimating=$('levelMode').value==='estimate';$('eloField').hidden=estimating;$('estimateHint').hidden=!estimating;};
 $('start').onclick=()=>work('Preparando la partida y sorteando tu color…',async()=>{const levelMode=$('levelMode').value;game=await api('new',{opponent:$('opponent').value,rating:levelMode==='manual'?Number($('eloInput').value)||350:rating,levelMode,trainingTarget:profile.target()});$('rating').textContent=game.rating;flipped=game.human==='b';reviewFen=null;exerciseIndex=null;notice(game.notice);if(game.over)finish();},{natural:true});
 function showModelDetails(){
@@ -242,7 +244,7 @@ $('connect').onclick=()=>work('Guardando la conexión en esta sesión…',async(
 $('disconnect').onclick=()=>{if(busy)return;trainer.ai.key='';aiReady=false;$('apiKey').value='';updateConnection();$('keyStatus').textContent='Clave eliminada de esta sesión.';notice('IA desconectada. El rival local sigue disponible.');};
 $('offline').onclick=()=>work('El rival está pensando…',async()=>{game=await api('offline');notice(game.notice);if(game.over)finish();},{natural:true});
 $('flip').onclick=()=>{flipped=!flipped;drawBoard();};
-$('resign').onclick=()=>work('Cerrando la partida…',async()=>{if(!confirm('¿Terminar esta partida por rendición y pasar a la revisión?'))return;game=await api('resign');reviewFen=null;finish();});
+$('resign').onclick=()=>work('Cerrando la partida…',async()=>{if(!confirm(translate('¿Terminar esta partida por rendición y pasar a la revisión?')))return;game=await api('resign');reviewFen=null;finish();});
 $('retry').onclick=()=>work('El rival está pensando…',async()=>{game=await api('retry');notice(game.notice);if(game.over)finish();},{natural:true});
 $('report').onclick=()=>work('Preparando tu revisión…',async()=>{$('analysisProgress').hidden=false;$('analysisBar').value=0;$('analysisPercent').textContent='0%';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));game=await api('report');renderReport();});
 $('practice').onclick=()=>{selectExercise(0);$('practiceBoardPrompt').scrollIntoView({behavior:'smooth',block:'start'});};
@@ -264,3 +266,16 @@ function showClocks(){
 setInterval(()=>{if(!trainer.game)return;const wasOver=game?.over,oldMoves=game?.moves.length,oldId=game?.id;game=trainer.view();if(oldId!==game.id)flipped=game.human==='b';showClocks();showThinking();if(busy&&oldMoves!==game.moves.length)render();if(game.over&&!wasOver){finish();render();}},100);
 const oldNew=$('newGame').onclick;$('newGame').onclick=()=>{clearTimeout(preludeTimer);trainer.stopClock();trainer.game=null;oldNew();renderTraining();$('eloInput').value=rating;showClocks();};
 fillModels();drawBoard();renderJournal();renderTraining();updateConnection();
+
+const localization=installLocalization();
+$('language').value=getLanguage();
+function applyLanguage(value){
+ setLanguage(value);trainer.language=value;$('helpLink').href=value==='en'?'./README.md':'./LEEME.md';
+ if(trainer.game)game=trainer.view();
+ if(game?.report)renderReport();if(currentExercise())renderExercise();if(game)render();
+ renderJournal();renderTraining();
+ if(reviewFen){const entry=game?.moves.find(m=>m.afterFen===reviewFen);$('explanation').textContent=entry?.explanation||'';}
+ localization.refresh();
+}
+$('language').onchange=()=>applyLanguage($('language').value);
+applyLanguage(getLanguage());
