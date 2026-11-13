@@ -1,6 +1,7 @@
 import { Chess } from './vendor/chess.js';
 import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
 import {localReview,exerciseFeedback} from './learning.js';
+import {candidateTraining,PATTERNS} from './training.js';
 export {MODEL_PRESETS} from './models.js';
 
 export class BrowserEngine {
@@ -47,7 +48,7 @@ export function classify(before,after,uci,best){
 }
 export function candidateMoves(chess,analysis,rating,ply){
   const tolerance=rating<600?100:rating<1000?65:rating<1400?35:15;
-  let list=analysis.candidates.filter(c=>analysis.cp-c.cp<=tolerance).map(c=>({uci:c.pv[0],san:variation(chess.fen(),[c.pv[0]]),line:variation(chess.fen(),c.pv),cp:c.cp}));
+  let list=analysis.candidates.filter(c=>analysis.cp-c.cp<=tolerance).map(c=>({uci:c.pv[0],san:variation(chess.fen(),[c.pv[0]]),line:variation(chess.fen(),c.pv),pv:c.pv.slice(0,8),cp:c.cp}));
   if(ply<8&&!chess.isCheck()){
     const legal=chess.moves({verbose:true});const development=list.filter(c=>{
       const m=legal.find(m=>m.from+m.to+(m.promotion||'')===c.uci);
@@ -129,13 +130,13 @@ export class ChessTrainer {
   }
   status(){const g=this.game,c=g.chess;if(g.ended==='resign')return 'Te rendiste. Ganan las '+(g.human==='w'?'negras.':'blancas.');if(g.ended==='timeout')return 'Tiempo agotado. Ganan las '+(g.loser==='w'?'negras.':'blancas.');if(c.isCheckmate())return 'Jaque mate. Ganan las '+(c.turn()==='w'?'negras.':'blancas.');if(c.isDraw())return 'Tablas'+(c.isStalemate()?' por ahogado.':c.isThreefoldRepetition()?' por repetición.':c.isInsufficientMaterial()?' por material insuficiente.':' por 50 movimientos.');return (c.turn()===g.human?'Tu turno':'El rival está pensando')+(c.isCheck()?' · Jaque':'');}
   view(){this.syncClock();const g=this.game;if(!g)return null;this.setResult();return {id:g.id,fen:g.chess.fen(),human:g.human,turn:g.chess.turn(),mode:'final',opponent:g.opponent,rating:g.rating,status:this.status(),over:this.isOver(),outcome:this.outcome(),pgn:g.chess.pgn(),reviewed:!!g.reviewed,usage:this.ai.usage(),clocks:{...g.clocks},running:g.running,
-    levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
+    trainingTarget:g.reviewed?g.trainingTarget:null,levelMode:g.levelMode,legal:this.isOver()?[]:g.chess.moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion})),
     moves:g.moves.map(m=>g.reviewed?{...m}:{ply:m.ply,san:m.san,from:m.from,to:m.to,color:m.color}),notice:g.notice||null,report:g.report||null,
     exercises:(g.exercises||[]).map(x=>({ply:x.ply,fen:x.fen,beforeOpponentFen:x.beforeOpponentFen,opponentMove:x.opponentMove,done:!!x.done,answer:x.answer||null,attempts:(x.attempts||[]).map(a=>({...a})),failedAttempts:(x.attempts||[]).filter(a=>!a.good).length,legal:new Chess(x.fen).moves({verbose:true}).map(m=>({from:m.from,to:m.to,promotion:m.promotion}))}))};}
-  record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};g.moves.push(entry);this.setResult();return entry;}
-  async start({opponent='stockfish',rating=350,color,levelMode='manual'}={}){
+  record(move){const g=this.game,beforeFen=g.chess.fen(),m=g.chess.move(move);const entry={ply:g.moves.length+1,san:m.san,from:m.from,to:m.to,color:m.color,uci:m.from+m.to+(m.promotion||''),beforeFen,afterFen:g.chess.fen()};if(m.color===g.human&&g.pendingChallenge){entry.challenge=g.pendingChallenge;g.pendingChallenge=null;}g.moves.push(entry);this.setResult();return entry;}
+  async start({opponent='stockfish',rating=350,color,levelMode='manual',trainingTarget=null}={}){
     if(opponent==='generative'&&!this.ai.key)throw new Error('Conecta una clave personal para usar el rival generativo. El rival sin conexión a GPT está disponible sin clave.');
-    this.ai.reset();this.game={id:crypto.randomUUID(),chess:new Chess(),human:color||((crypto.getRandomValues(new Uint8Array(1))[0]&1)?'w':'b'),opponent,rating:Math.max(300,Math.min(2000,Number(rating)||350)),levelMode,moves:[],clocks:{w:600000,b:600000},running:null};
+    this.ai.reset();this.game={id:crypto.randomUUID(),chess:new Chess(),human:color||((crypto.getRandomValues(new Uint8Array(1))[0]&1)?'w':'b'),opponent,rating:Math.max(300,Math.min(2000,Number(rating)||350)),levelMode,trainingTarget:trainingTarget&&PATTERNS[trainingTarget.id]?{...trainingTarget}:null,moves:[],clocks:{w:600000,b:600000},running:null};
     try{await this.engine.init();}catch(e){this.game=null;throw e;}this.runClock('w');
     if(this.game.human==='b'){try{await this.reply();}catch(e){this.game.notice=e.message;}}
     return this.view();
@@ -145,18 +146,20 @@ export class ChessTrainer {
     this.runClock(g.chess.turn());
     const a=await this.engine.evaluate(g.chess.fen(),{ms:950,multipv:5,history:g.moves.map(m=>m.uci).join(' ')});
     this.syncClock();if(this.isOver())return;
-    const candidates=candidateMoves(g.chess,a,g.rating,g.moves.length);let uci;
+    const candidates=candidateMoves(g.chess,a,g.rating,g.moves.length).map(c=>({...c,training:candidateTraining(g.chess.fen(),c,g.trainingTarget)}));let uci;
     if(g.opponent==='generative'){
       this.abort=new AbortController();
       try{
-        const text=await this.ai.generate('Juega ajedrez con un principiante. Elige exactamente una jugada UCI de candidates. Crea amenazas coherentes y disputa centro y desarrollo; no hagas regalos deliberados. Adapta complejidad a trainingIndex. Devuelve solo el código de 4 o 5 caracteres.',{fen:g.chess.fen(),trainingIndex:g.rating,candidates,history:g.chess.history().slice(-12)},32,{signal:this.abort.signal});
+        const text=await this.ai.generate('Juega una partida nueva desde la posición inicial contra un principiante. Elige exactamente una jugada UCI de candidates. Crea amenazas coherentes y disputa centro y desarrollo; no hagas regalos deliberados. Si hay trainingTarget, intenta conducir de forma natural hacia ese patrón de debilidad, aprovechando las señales training de los candidatos. Si aún no se puede plantear, prepara un plan coherente; nunca inventes una amenaza ni una jugada fuera de candidates. No repitas una posición antigua ni reduzcas la calidad para montar una trampa. Adapta complejidad a trainingIndex. Devuelve solo el código UCI.',{fen:g.chess.fen(),trainingIndex:g.rating,trainingTarget:g.trainingTarget?{id:g.trainingTarget.id,...PATTERNS[g.trainingTarget.id]}:null,candidates,history:g.chess.history().slice(-16)},32,{signal:this.abort.signal});
         uci=(text.toLowerCase().match(/\b[a-h][1-8][a-h][1-8][qrbn]?\b/g)||[]).find(m=>candidates.some(c=>c.uci===m));
         if(!uci)throw new Error('La IA no eligió una alternativa válida. Puedes reintentar su respuesta.');
       }finally{this.abort=null;}
-    }else uci=candidates[Math.floor(Math.random()*candidates.length)]?.uci;
+    }else{const ranked=[...candidates].sort((a,b)=>b.training.score-a.training.score);uci=g.trainingTarget&&ranked[0]?.training.score>0?ranked[0].uci:candidates[Math.floor(Math.random()*candidates.length)]?.uci;}
     this.syncClock();if(this.isOver())return;
     if(!uci||uci==='(none)')throw new Error('El motor no pudo responder. Reintenta.');
-    this.stopClock();this.record({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});if(!this.isOver())this.runClock(g.human);
+    const chosen=candidates.find(c=>c.uci===uci);this.stopClock();this.record({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
+    if(g.trainingTarget&&chosen?.training.opportunity&&!this.isOver())g.pendingChallenge={id:g.trainingTarget.id,signals:chosen.training.signals,fen:g.chess.fen(),opponentMove:uci};
+    if(!this.isOver())this.runClock(g.human);
   }
   async move(data){this.syncClock();const g=this.game;if(this.isOver()||g.chess.turn()!==g.human)throw new Error('Ahora no puedes mover.');
     const validator=new Chess(g.chess.fen());validator.move({from:data.from,to:data.to,promotion:data.promotion||'q'});

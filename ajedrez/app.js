@@ -1,6 +1,7 @@
 import { ChessTrainer } from './core.js';
 import { PROVIDERS, MODEL_PRESETS, modelRates, CATALOG_DATE } from './models.js';
 import {Chess} from './vendor/chess.js';
+import {TrainingProfile} from './training.js';
 const $ = id => document.getElementById(id);
 const symbols = { k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟' };
 const names = { k:'rey',q:'dama',r:'torre',b:'alfil',n:'caballo',p:'peón' };
@@ -8,10 +9,12 @@ let game = null, selected = null, flipped = false, busy = false, reviewFen = nul
 let quietThinking=false,boardSignature='',renderedGame=null,renderedPly=0,renderedFlipped=false;
 let exercisePhase='challenge',exercisePreviewFen=null,exerciseMotion=null,preludeTimer=null;
 let journal = [], rating = 350;
+let profile=new TrainingProfile();
+try{profile=new TrainingProfile(JSON.parse(localStorage.getItem('entre-jugadas-training')||'{}'));}catch{}
 try { journal = JSON.parse(localStorage.getItem('entre-jugadas-journal') || '[]'); if (!Array.isArray(journal)) journal = []; rating = Number(localStorage.getItem('entre-jugadas-rating')) || 350; } catch {}
 $('rating').textContent = rating;
 $('eloInput').value=rating;
-function store() { try { localStorage.setItem('entre-jugadas-journal',JSON.stringify(journal)); localStorage.setItem('entre-jugadas-rating',String(rating)); } catch { notice('No se pudo guardar el cuaderno en este navegador.'); } }
+function store() { try { localStorage.setItem('entre-jugadas-journal',JSON.stringify(journal)); localStorage.setItem('entre-jugadas-rating',String(rating)); localStorage.setItem('entre-jugadas-training',JSON.stringify(profile.export())); } catch { notice('No se pudo guardar el cuaderno en este navegador.'); } }
 function notice(text) { $('notice').textContent = text || ''; $('notice').hidden = !text; }
 const trainer = new ChessTrainer({onProgress:message=>{ $('busyText').textContent=message; }});
 function updateConnection(){
@@ -167,6 +170,8 @@ function showMove(ply) {
 }
 function renderReport(){
   const r=game.report;$('reportPanel').hidden=false;$('reflectionPanel').hidden=true;
+  const training=profile.review(game);store();renderTraining();$('trainingReview').textContent=training.text;
+  const next=profile.target();$('nextHabit').textContent=next?'Qué mirar en tu próxima partida: '+next.cue:'Los patrones pendientes volverán a priorizarse cuando corresponda su repaso.';
   $('reportText').textContent=r.text;$('reportSource').textContent=r.source;
   $('stats').replaceChildren();for(const [key,label]of[['blunder','Errores graves'],['mistake','Errores'],['inaccuracy','Imprecisiones']]){const d=document.createElement('div');const b=document.createElement('b');b.textContent=r.counts[key];d.append(b,document.createTextNode(label));$('stats').append(d);}
   if(r.progress){rating=r.progress.after;$('rating').textContent=rating;store();$('progress').textContent=r.estimate?r.estimate.text+'\n\nReferencia para la próxima partida: '+rating+'.':`Próxima partida: ${rating} (${rating-r.progress.before>=0?'+':''}${rating-r.progress.before}). Ajuste por resultado y errores graves. Índice propio, sin equivalencia a Elo oficial.`;}
@@ -191,11 +196,21 @@ function selectExercise(i){
 }
 function logPractice(x){
  const a=x.attempts.at(-1);if(!a)return;const id=game.id+':'+x.ply+':attempt:'+a.number;if(journal.some(j=>j.id===id))return;
- journal.push({id,date:new Date(a.at).toLocaleDateString('es-CL'),pattern:a.good?'Acierto en ejercicio':'Error en ejercicio',result:a.good?'correct':'incorrect',attempt:a.number,ply:x.ply,fen:x.fen,text:'Jugada '+Math.ceil(x.ply/2)+' · Intento '+a.number+' · '+a.san+'\nMi previsión: '+a.reason+'\n'+a.feedback});store();renderJournal();
+ const source=game.moves.find(m=>m.ply===x.ply);if(source)profile.exercise(source,a,game.id);
+ journal.push({id,date:new Date(a.at).toLocaleDateString('es-CL'),pattern:a.good?'Acierto en ejercicio':'Error en ejercicio',result:a.good?'correct':'incorrect',attempt:a.number,ply:x.ply,fen:x.fen,text:'Jugada '+Math.ceil(x.ply/2)+' · Intento '+a.number+' · '+a.san+'\nMi previsión: '+a.reason+'\n'+a.feedback});store();renderJournal();renderTraining();
+}
+function renderTraining(){
+ const target=profile.target();$('trainingPlan').textContent=target?'Próxima partida: el rival intentará crear situaciones de «'+target.label.toLowerCase()+'» desde una partida nueva, entre jugadas razonables. No siempre será posible.':'Cada partida empieza desde cero. Al revisar tus errores, el rival podrá orientar futuras partidas hacia tus debilidades cuando toque repasarlas.';
+ const list=$('performance');list.replaceChildren();
+ const stats=profile.stats();$('performanceEmpty').hidden=!!stats.length;
+ for(const p of stats){const entry=document.createElement('div');entry.className='journal-entry';const title=document.createElement('strong');title.textContent=p.label;
+ const numbers=document.createElement('p');numbers.textContent=`Errores detectados: ${p.mistakes}. En partidas nuevas: ${p.gameGood} respuestas buenas y ${p.gameBad} con error. En ejercicios: ${p.exerciseGood} aciertos y ${p.exerciseBad} intentos incorrectos.`;
+ const schedule=document.createElement('small');schedule.textContent='Etapa de repaso '+p.stage+'/6 · '+(p.due?'Pendiente': 'Próximo: '+new Date(p.dueAt).toLocaleString('es-CL'));
+ entry.append(title,numbers,schedule);list.append(entry);}
 }
 function renderJournal(){ $('journalCount').textContent=journal.length;$('journal').replaceChildren();journal.slice().reverse().slice(0,15).forEach(x=>{const d=document.createElement('div');d.className='journal-entry';const s=document.createElement('small');s.textContent=x.date+' · '+x.pattern;const p=document.createElement('p');p.textContent=x.text;d.append(s,p);$('journal').append(d);}); }
 $('levelMode').onchange=()=>{const estimating=$('levelMode').value==='estimate';$('eloField').hidden=estimating;$('estimateHint').hidden=!estimating;};
-$('start').onclick=()=>work('Preparando la partida y sorteando tu color…',async()=>{const levelMode=$('levelMode').value;game=await api('new',{opponent:$('opponent').value,rating:levelMode==='manual'?Number($('eloInput').value)||350:rating,levelMode});$('rating').textContent=game.rating;flipped=game.human==='b';reviewFen=null;exerciseIndex=null;notice(game.notice);if(game.over)finish();},{natural:true});
+$('start').onclick=()=>work('Preparando la partida y sorteando tu color…',async()=>{const levelMode=$('levelMode').value;game=await api('new',{opponent:$('opponent').value,rating:levelMode==='manual'?Number($('eloInput').value)||350:rating,levelMode,trainingTarget:profile.target()});$('rating').textContent=game.rating;flipped=game.human==='b';reviewFen=null;exerciseIndex=null;notice(game.notice);if(game.over)finish();},{natural:true});
 function showModelDetails(){
   const provider=$('provider').value,custom=$('model').value==='custom',item=custom?null:modelRates($('model').value);
   $('customModelPanel').hidden=!custom;
@@ -243,5 +258,5 @@ function showClocks(){
  $('humanClock').classList.toggle('low',game.clocks[game.human]<60000);$('opponentClock').classList.toggle('low',game.clocks[other]<60000);
 }
 setInterval(()=>{if(!trainer.game)return;const wasOver=game?.over,oldMoves=game?.moves.length,oldId=game?.id;game=trainer.view();if(oldId!==game.id)flipped=game.human==='b';showClocks();showThinking();if(busy&&oldMoves!==game.moves.length)render();if(game.over&&!wasOver){finish();render();}},100);
-const oldNew=$('newGame').onclick;$('newGame').onclick=()=>{clearTimeout(preludeTimer);trainer.stopClock();trainer.game=null;oldNew();$('eloInput').value=rating;showClocks();};
-fillModels();drawBoard();renderJournal();updateConnection();
+const oldNew=$('newGame').onclick;$('newGame').onclick=()=>{clearTimeout(preludeTimer);trainer.stopClock();trainer.game=null;oldNew();renderTraining();$('eloInput').value=rating;showClocks();};
+fillModels();drawBoard();renderJournal();renderTraining();updateConnection();
