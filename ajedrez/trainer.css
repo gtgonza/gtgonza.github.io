@@ -110,6 +110,9 @@
 .replay-trigger { margin-top: 12px; }
 .replay-dialog { width: min(540px, 94vw); max-width: 94vw; padding: clamp(14px, 3vw, 24px); }
 .replay-dialog .board-shell { max-width: min(100%, 50dvh); margin: 0 auto; }
+.replay-board-frame { position: relative; }
+.replay-arrow { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; pointer-events: none; }
+.replay-arrow path { fill: #006a80; stroke: #fffef9; stroke-width: .045; stroke-linejoin: round; }
 .replay-header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
 .replay-header h2 { margin-bottom: 4px; font-size: clamp(21px, 4vw, 27px); }
 .replay-header .muted { margin-bottom: 12px; }

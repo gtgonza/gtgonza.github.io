@@ -1,10 +1,10 @@
 import {Chess} from './vendor/chess.js';
-import {BrowserEngine,puzzleLength} from './core.js?v=plain-coaching';
-import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=plain-coaching';
+import {BrowserEngine,puzzleLength} from './core.js?v=replay-arrows';
+import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=replay-arrows';
 import {PuzzleLibrary,latestGame} from './library.js';
 import {getLanguage,setLanguage} from './i18n.js';
 import {openBrowserDatabase} from './browser-db.js';
-import {replayLine,replayLessonLine,explainReplay,replayCoachStep,compareReplayLines} from './learning.js?v=plain-coaching';
+import {replayLine,replayLessonLine,explainReplay,replayCoachStep,compareReplayLines} from './learning.js?v=replay-arrows';
 const $=id=>document.getElementById(id),t=(en,es)=>getLanguage()==='es'?es:en;
 const locale=()=>getLanguage()==='es'?'es-CL':'en-US';
 let browserStorage;try{browserStorage=localStorage;}catch{browserStorage={getItem:()=>null,setItem:()=>{throw Error('Storage unavailable');}};}
@@ -34,6 +34,22 @@ function counterplay(played,buildLine=replayLine){
  const pv=played.counterplay||played.after?.pv||[];
  return buildLine(played.fen||played.beforeFen,[played.uci,...pv]);
 }
+function drawReplayArrow(from,to,flipped){
+ const arrow=$('replayArrow');
+ const visible=!!from&&!!to&&from!==to;
+ arrow.toggleAttribute('hidden',!visible);
+ if(!visible)return;
+ const point=square=>{
+  const file=square.charCodeAt(0)-97,rank=Number(square[1]);
+  return flipped?[7.5-file,rank-.5]:[file+.5,8.5-rank];
+ };
+ const [x,y]=point(from),[targetX,targetY]=point(to);
+ const dx=targetX-x,dy=targetY-y,length=Math.hypot(dx,dy);
+ const path=$('replayArrowPath');
+ const head=length-.56,tip=length-.24;
+ path.setAttribute('transform',`translate(${x} ${y}) rotate(${Math.atan2(dy,dx)*180/Math.PI})`);
+ path.setAttribute('d',`M .24 -.075 H ${head} V -.20 L ${tip} 0 L ${head} .20 V .075 H .24 Z`);
+}
 function renderReplay(animate=false){
  const {index,fen,human,alternative,original,showingAlternative,fullLine}=replay;
  const line=showingAlternative?alternative:original;
@@ -48,6 +64,8 @@ function renderReplay(animate=false){
   square.classList.toggle('coach-source',square.dataset.square===coach.source);
   square.classList.toggle('coach-target',coach.targets.includes(square.dataset.square));
  }
+ const direction=coach.arrow||(coach.targets.length?{from:coach.source,to:coach.targets[0]}:move);
+ drawReplayArrow(direction?.from,direction?.to,human==='b');
  $('replayTargetLegend').hidden=!coach.targets.length;
  $('replayFocus').textContent=coach.title;
  $('replayCaption').textContent=coach.text;

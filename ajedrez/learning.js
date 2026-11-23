@@ -126,6 +126,7 @@ function positionalClue(move,board,old,language,human=move.color){
   !board.attackers(square,move.color).length&&board.attackers(square,board.turn()).length);
  if(lost)return {
   source:move.to,targets:[lost],title:en?'A square opens for the opponent':'El rival gana un lugar donde poner una pieza',
+  arrow:{from:move.from,to:move.to},
   text:en?`The marked piece used to cover ${lost}. ${yours?'The opponent can use':'You can use'} that square without worrying about a capture by the marked piece.`:
    `Antes, la pieza marcada podía atacar a quien entrara en ${lost}. ${yours?'Si el rival quiere usar esa casilla, ya no tiene que preocuparse por esa pieza.':'Si quieres usar esa casilla, esa pieza ya no te la disputa.'}`
  };
@@ -192,7 +193,7 @@ export function replayCoachStep(line,index,human,language='es'){
   const threat=next.mate
    ?(en?`If ${attacker} plays ${next.san}, the marked king will be in checkmate.`:`Si ${attacker} juega ${next.san}, el rey marcado queda en jaque mate.`)
    :(en?`If ${attacker} plays ${next.san}, the marked king comes under check.`:`Si ${attacker} juega ${next.san}, el rey marcado queda en jaque.`);
-  return {source:next.from,targets:[king.square],title:en?'See the check coming':'Anticipa el jaque',text:description+' '+threat};
+  return {source:next.from,targets:[...new Set([next.to,king.square])],title:en?'See the check coming':'Anticipa el jaque',text:description+' '+threat};
  }
  if(next?.captured){
   const victimSquare=next.captureSquare;
@@ -200,7 +201,8 @@ export function replayCoachStep(line,index,human,language='es'){
   const actor=pieceOn(next.piece,next.from,en),victim=pieceOn(next.captured,victimSquare,en);
   const risk=en?`Follow ${actor}. It can take ${victim} on the next move.`:`Sigue ${actor}. Puede capturar ${victim} en la jugada siguiente.`;
   const cover=lostCover?(en?' That piece lost its defender.':' Esa pieza se quedó sin defensa.'):'';
-  return {source:next.from,targets:[victimSquare],title:en?'Spot the next capture':'Encuentra la próxima captura',text:description+' '+risk+cover};
+  const targets=next.to===victimSquare?[victimSquare]:[next.to,victimSquare];
+  return {source:next.from,targets,title:en?'Spot the next capture':'Encuentra la próxima captura',text:description+' '+risk+cover};
  }
  if(move.captured){
   const recapture=board.moves({verbose:true}).some(reply=>reply.to===source&&reply.captured);
