@@ -4,7 +4,7 @@ import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from 
 import {PuzzleLibrary,latestGame} from './library.js';
 import {getLanguage,setLanguage} from './i18n.js';
 import {openBrowserDatabase} from './browser-db.js';
-import {replayLine,explainReplay,moveDescription} from './learning.js?v=move-replay';
+import {replayLine,explainReplay,narrateReplayMove,missedOpportunity} from './learning.js?v=move-replay';
 const $=id=>document.getElementById(id),t=(en,es)=>getLanguage()==='es'?es:en;
 const locale=()=>getLanguage()==='es'?'es-CL':'en-US';
 let browserStorage;try{browserStorage=localStorage;}catch{browserStorage={getItem:()=>null,setItem:()=>{throw Error('Storage unavailable');}};}
@@ -18,7 +18,7 @@ let importView='paste',guided=null,playerHeaders={};
 let runner=null,queue=[],used=new Set(),phase='challenge',selected=null,flipped=false,motion=null,previewFen=null,wrongMove=null,transitionTimer=null,extraPractice=false,finishedSet=false;
 let blindSession=false,sessionHabit=null,habitRevealed=false;
 const boardState=new WeakMap();
-let replay=null,replayTimer=null;
+let replay=null;
 $('username').value=library.username;
 function notice(message){$('notice').textContent=message||'';$('notice').hidden=!message;}
 function theme(id){return THEMES[id]?.[getLanguage()]||THEMES.calculation[getLanguage()];}
@@ -35,48 +35,39 @@ function counterplay(played){
  return replayLine(played.fen||played.beforeFen,[played.uci,...pv]);
 }
 function renderReplay(animate=false){
- const {index,line,fen,human}=replay;
+ const {index,fen,human,alternative,original,showingAlternative}=replay;
+ const line=showingAlternative?alternative:original;
  const move=line[index-1];
  drawBoard($('replayBoard'),move?.fen||fen,{
-  flip:human==='b',motion:animate?move:null,lastMove:move,wrong:index===1?move:null
+  flip:human==='b',motion:animate?move:null,lastMove:move,wrong:index===1&&!showingAlternative?move:null
  });
- $('replayCaption').textContent=move?moveDescription(move,human,getLanguage()):t('Position before your move.','Posición antes de tu jugada.');
+ const context=index===1&&!showingAlternative?missedOpportunity(original,alternative,human,getLanguage()):'';
+ $('replayCaption').textContent=move
+  ?[narrateReplayMove(move,human,getLanguage()),context].filter(Boolean).join(' ')
+  :t('This is where it started. Press Next move to see what happens.','Así estaba el tablero antes de tu jugada. Pulsa Avanzar para ver qué pasó.');
  $('replayCount').textContent=index+' / '+line.length;
  $('replayPrevious').disabled=index===0;
  $('replayNext').disabled=index===line.length;
- $('replayPlay').textContent=replayTimer
-  ?t('Pause','Pausar')
-  :index===line.length?t('Replay from start','Repetir desde el inicio'):t('Play','Reproducir');
-}
-function pauseReplay(){
- clearTimeout(replayTimer);
- replayTimer=null;
+ $('replaySummary').textContent=line.length>1&&index===line.length&&!move?.mate?explainReplay(line,human,getLanguage()):'';
+ $('replayAlternative').hidden=!alternative.length;
+ $('replayAlternative').textContent=showingAlternative?t('See my move','Volver a mi jugada'):t('Compare with an alternative','Comparar con una alternativa');
+ $('replayTitle').textContent=showingAlternative?t('An alternative from the same position','Una alternativa desde la misma posición'):replay.title;
 }
 function stepReplay(delta){
- pauseReplay();
  replay.index+=delta;
  renderReplay(delta>0);
-}
-function playReplay(){
- if(replayTimer){pauseReplay();renderReplay();return;}
- if(replay.index===replay.line.length){replay.index=0;renderReplay();}
- const advance=()=>{
-  replay.index++;
-  replayTimer=replay.index<replay.line.length?setTimeout(advance,1100):null;
-  renderReplay(true);
- };
- replayTimer=setTimeout(advance,600);
- renderReplay();
 }
 function showCounterplay(played,human,inGame){
  const line=counterplay(played);
  if(line.length<2)return;
- replay={index:0,line,fen:played.fen||played.beforeFen,human};
- $('replayTitle').textContent=inGame?t('What went wrong in your game?','¿Qué pasó en tu partida?'):t('What did this move allow?','¿Qué permitió esta jugada?');
- $('replaySummary').textContent=explainReplay(line,human,getLanguage());
- $('replayDialog').showModal();
+ const fen=played.fen||played.beforeFen;
+ const alternative=inGame?replayLine(fen,played.before?.pv||[]):[];
+ replay={
+  index:0,original:line,alternative:alternative[0]?.san===line[0].san?[]:alternative,showingAlternative:false,fen,human,
+  title:inGame?t('What went wrong in your game?','¿Qué pasó en tu partida?'):t('What did this move allow?','¿Qué permitió esta jugada?')
+ };
  renderReplay();
- if(!matchMedia('(prefers-reduced-motion: reduce)').matches)playReplay();
+ $('replayDialog').showModal();
 }
 function renderNavigation(){
  const current=guided&&tab==='streak'?'import':tab;
@@ -442,10 +433,14 @@ $('newGame').onclick=$('practiceNewGame').onclick=$('practiceImport').onclick=ne
 $('backToLesson').onclick=()=>showImport('lesson');
 $('practiceBack').onclick=$('doneBack').onclick=backToLesson;
 $('startGamePractice').onclick=startGamePractice;
-$('replayPlay').onclick=playReplay;
 $('replayPrevious').onclick=()=>stepReplay(-1);
 $('replayNext').onclick=()=>stepReplay(1);
-$('replayDialog').addEventListener('close',pauseReplay);
+$('replayAlternative').onclick=()=>{
+ replay.showingAlternative=!replay.showingAlternative;
+ replay.index=0;
+ renderReplay();
+ $('replayNext').focus();
+};
 $('language').onclick=()=>{if(busy)return;setLanguage(getLanguage()==='en'?'es':'en');importError();localize();};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.tab==='streak')openDailyPractice();else switchTab(b.dataset.tab);});
 $('pgn').oninput=()=>{importError();formatPlayers();};

@@ -120,3 +120,5 @@
 .replay-actions .primary { width: auto; padding: 10px 14px; }
 #replaySummary { margin: 12px 0 0; }
 .square.last-move:not(.wrong) { box-shadow: inset 0 0 0 3px #557d9a; background: var(--blue); }
+#replaySummary:empty { display: none; }
+#replayAlternative { margin-top: 6px; text-decoration: underline; text-underline-offset: 2px; }

@@ -13,7 +13,7 @@ export function replayLine(fen,moves){
    const move=board.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
    line.push({
     san:move.san,from:move.from,to:move.to,color:move.color,piece:move.piece,
-    captured:move.captured,promotion:move.promotion,fen:board.fen(),check:board.isCheck(),mate:board.isCheckmate()
+    captured:move.captured,promotion:move.promotion,before:move.before,fen:board.fen(),check:board.isCheck(),mate:board.isCheckmate()
    });
   }catch{break;}
   if(board.isGameOver())break;
@@ -27,7 +27,8 @@ export function moveDescription(move,human,language='es'){
  if(move.mate)return en?`${actor} deliver${yours?'':'s'} checkmate with ${move.san}.`:`${actor} ${yours?'das':'da'} jaque mate con ${move.san}.`;
  const action=move.captured
   ?en?`capture${yours?'':'s'} the ${pieces[move.captured]} on ${move.to}`:`${yours?'capturas':'captura'} ${article(move.captured)} ${pieces[move.captured]} de ${move.to}`
-  :en?`play${yours?'':'s'} ${move.san}`:`${yours?'juegas':'juega'} ${move.san}`;
+  :en?`move${yours?'':'s'} the ${pieces[move.piece]} from ${move.from} to ${move.to}`
+   :`${yours?'mueves':'mueve'} ${article(move.piece)} ${pieces[move.piece]} de ${move.from} a ${move.to}`;
  const check=move.check?(en?' with check':' y da'+(yours?'s':'')+' jaque'):'';
  return actor+' '+action+check+'.';
 }
@@ -61,7 +62,22 @@ export function explainReplay(line,human,language='es'){
  if(threat)return moveDescription(threat,human,language);
  return last?moveDescription(last,human,language):'';
 }
-function newTargets(move,board,language){
+export function missedOpportunity(line,alternative,human,language='es'){
+ const en=language==='en',mate=alternative.at(-1),missedMate=mate?.mate&&mate.color===human&&!(line.at(-1)?.mate&&line.at(-1)?.color===human);
+ if(missedMate)return alternative.length===1
+  ?(en?'You had checkmate in one from the starting position.':'En la posición inicial tenías jaque mate en una jugada.')
+  :(en?'The alternative shows a sequence that ends in checkmate for you.':'La alternativa muestra una secuencia que termina en jaque mate a tu favor.');
+ if(alternative.length>1&&materialInLine(alternative,human)>Math.max(0,materialInLine(line,human)))
+  return en?'The alternative wins more material in the lines shown.':'En las variantes mostradas, la alternativa gana más material.';
+ return '';
+}
+export function narrateReplayMove(move,human,language='es'){
+ if(move.mate)return explainReplay([move],human,language);
+ const description=moveDescription(move,human,language);
+ const threat=!move.captured&&!move.check?newTargets(move,new Chess(move.fen),language,human):'';
+ return [description,threat].filter(Boolean).join(' ');
+}
+function newTargets(move,board,language,human=move?.color){
  if(!move?.before)return '';
  const old=new Chess(move.before),enemy=board.turn(),en=language==='en';
  const pieces=en?englishNames:names;
@@ -70,7 +86,8 @@ function newTargets(move,board,language){
  ).sort((a,b)=>pieceValues[b.type]-pieceValues[a.type]).slice(0,2);
  if(!targets.length)return '';
  const list=new Intl.ListFormat(language).format(targets.map(piece=>en?`the ${pieces[piece.type]} on ${piece.square}`:`${article(piece.type)} ${pieces[piece.type]} en ${piece.square}`));
- return en?`From ${move.to}, your ${pieces[move.piece]} now attacks ${list}.`:`Desde ${move.to}, tu ${pieces[move.piece]} ahora ataca ${list}.`;
+ const subject=move.color===human?(en?'your':'tu'):(en?'the opponent’s':article(move.piece));
+ return en?`From ${move.to}, ${subject} ${pieces[move.piece]} now attacks ${list}.`:`Desde ${move.to}, ${subject} ${pieces[move.piece]} ahora ataca ${list}.`;
 }
 function positionalIdea(move,board,language){
  if(!move||board.isGameOver())return '';
@@ -138,6 +155,7 @@ export function exerciseFeedback({san,good,move,afterFen,after,original,language
  const comparison=oldReply&&(avoidedMate||improvedMaterial)
   ?(en?`Compare with ${original.san} in the game: `:`Compara con ${original.san} en la partida: `)+explainReplay(oldLine,human,language)
   :'';
+ const missed=oldReply?missedOpportunity(oldLine,line,human,language):'';
  const escaped=move&&oldReply?.captured===move.piece&&oldReply.to===move.from
   ?(en?`You moved your ${englishNames[move.piece]} away from ${move.from}, where it could be captured after ${original.san}.`:`Sacaste tu ${names[move.piece]} de ${move.from}, donde el rival podía capturar esa pieza después de ${original.san}.`)
   :'';
@@ -147,7 +165,7 @@ export function exerciseFeedback({san,good,move,afterFen,after,original,language
   intro,
   idea||concrete,
   idea&&tacticalOutcome?concrete:'',
-  comparison
+  comparison||(missed?(en?`Compare with ${original.san} in your game. `:`Compáralo con ${original.san} en tu partida. `)+missed:'')
  ].filter(Boolean).join('\n\n');
 }
 function englishReview(mine,counts){
