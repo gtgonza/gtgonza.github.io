@@ -106,3 +106,17 @@
   .review-steps li { padding-left: 4px; padding-right: 3px; }
   .import-card .form-row { grid-template-columns: 1fr; }
 }
+
+.replay-trigger { margin-top: 12px; }
+.replay-dialog { width: min(540px, 94vw); max-width: 94vw; padding: clamp(14px, 3vw, 24px); }
+.replay-dialog .board-shell { max-width: min(100%, 50dvh); margin: 0 auto; }
+.replay-header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.replay-header h2 { margin-bottom: 4px; font-size: clamp(21px, 4vw, 27px); }
+.replay-header .muted { margin-bottom: 12px; }
+.replay-caption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 0; }
+.replay-caption p { margin: 0; }
+.replay-caption span { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.replay-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.replay-actions .primary { width: auto; padding: 10px 14px; }
+#replaySummary { margin: 12px 0 0; }
+.square.last-move:not(.wrong) { box-shadow: inset 0 0 0 3px #557d9a; background: var(--blue); }

@@ -1,6 +1,6 @@
 import { Chess } from './vendor/chess.js';
 import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
-import {localReview,exerciseFeedback} from './learning.js';
+import {localReview,exerciseFeedback} from './learning.js?v=move-replay';
 import {candidateTraining,PATTERNS} from './training.js';
 export {MODEL_PRESETS} from './models.js';
 
@@ -226,7 +226,7 @@ export class ChessTrainer {
       const uci=after.best||after.pv?.[0];if(!uci)throw new Error('No se pudo calcular la respuesta del rival. Intenta de nuevo.');
       const reply=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});opponentMove={from:reply.from,to:reply.to,san:reply.san,color:reply.color};
     }
-    const feedbackTexts=Object.fromEntries(['en','es'].map(language=>[language,exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen,after,original:step===1?g.moves.find(m=>m.ply===x.ply):null,language})]));
+    const feedbackTexts=Object.fromEntries(['en','es'].map(language=>[language,exerciseFeedback({san:m.san,good,move:m,afterFen,after,original:step===1?g.moves.find(m=>m.ply===x.ply):null,language})]));
     const done=good&&(step>=(x.targetSteps||1)||c.isGameOver());
     const remaining=(x.targetSteps||1)-step;
     if(good){feedbackTexts.es+=(done?'\n\nPuzle resuelto.'+(step<(x.targetSteps||1)?' La secuencia termina antes porque la posición ya es terminal.':''):'\n\nBuena decisión. El rival responde '+opponentMove.san+'. Continúa: '+(remaining===1?'falta 1 jugada tuya.':'faltan '+remaining+' jugadas tuyas.'));feedbackTexts.en+=(done?'\n\nPuzzle solved.'+(step<(x.targetSteps||1)?' The sequence ends early because the position is terminal.':''):'\n\nGood decision. Your opponent plays '+opponentMove.san+'. Continue: '+remaining+' of your '+(remaining===1?'moves remains.':'moves remain.'));}
