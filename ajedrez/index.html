@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Between Bishops · Learn from your mistakes</title><link rel="icon" href="./logo.svg" type="image/svg+xml"><link rel="stylesheet" href="./trainer.css?v=move-replay"><script type="module" src="./trainer-app.js?v=move-replay"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Between Bishops · Learn from your mistakes</title><link rel="icon" href="./logo.svg" type="image/svg+xml"><link rel="stylesheet" href="./trainer.css?v=board-guide"><script type="module" src="./trainer-app.js?v=board-guide"></script></head>
 <body>
 <header class="topbar"><a class="brand" href="./"><img src="./logo.svg" width="45" height="45" alt="Bishop"><span>Between Bishops<small data-en="LEARN FROM YOUR MISTAKES" data-es="APRENDE DE TUS ERRORES">LEARN FROM YOUR MISTAKES</small></span></a><div class="top-actions"><span class="engine-label" data-en="Stockfish · local analysis" data-es="Stockfish · análisis local">Stockfish · local analysis</span><button id="language" class="flag-button" type="button"><img id="languageFlag" src="./flags/en.svg" width="27" height="18" alt="English"><span id="languageCode">EN</span></button></div></header>
 <main>
@@ -95,12 +95,26 @@
     <form method="dialog"><button type="submit" data-en="Close" data-es="Cerrar">Close</button></form>
   </div>
   <div class="board-shell"><div id="replayBoard" class="board" role="group"></div></div>
-  <div class="replay-caption"><p id="replayCaption" aria-live="polite"></p><span id="replayCount"></span></div>
+  <div class="replay-legend">
+    <span class="replay-key source" data-en="Piece to watch" data-es="Pieza a mirar">Piece to watch</span>
+    <span id="replayTargetLegend" class="replay-key target" data-en="Affected square or piece" data-es="Casilla o pieza afectada">Affected square or piece</span>
+  </div>
   <div class="replay-actions">
     <button id="replayPrevious" type="button" data-en="Previous" data-es="Anterior">Previous</button>
     <button id="replayNext" type="button" class="primary" autofocus data-en="Next move" data-es="Avanzar">Next move</button>
+    <span id="replayCount"></span>
   </div>
-  <p id="replaySummary" class="muted"></p>
-  <button id="replayAlternative" class="quiet" type="button" hidden></button>
+  <div class="replay-caption" aria-live="polite" aria-atomic="true">
+    <h3 id="replayFocus"></h3>
+    <p id="replayCaption"></p>
+  </div>
+  <div id="replayTakeaway" class="replay-takeaway" hidden>
+    <h3 id="replayTakeawayTitle"></h3>
+    <p id="replaySummary"></p>
+  </div>
+  <div class="replay-links">
+    <button id="replayAlternative" class="quiet" type="button" hidden></button>
+    <button id="replayMore" class="quiet" type="button" hidden data-en="Show the rest of this line" data-es="Ver más jugadas">Show the rest of this line</button>
+  </div>
 </dialog>
 </body></html>

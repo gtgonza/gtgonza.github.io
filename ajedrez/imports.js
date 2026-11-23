@@ -1,6 +1,6 @@
 import {Chess} from './vendor/chess.js';
-import {classify,variation,puzzleLength} from './core.js?v=move-replay';
-import {localReview,exerciseFeedback,replyFacts} from './learning.js?v=move-replay';
+import {classify,variation,puzzleLength} from './core.js?v=board-guide';
+import {localReview,exerciseFeedback,replyFacts} from './learning.js?v=board-guide';
 import {patternForMove} from './training.js';
 export const THEMES={king:{en:'King safety',es:'Seguridad del rey'},pieces:{en:'Exposed material',es:'Material expuesto'},captures:{en:'Missed captures',es:'Capturas omitidas'},calculation:{en:'Calculate the reply',es:'Calcular la respuesta'},mate:{en:'Mating opportunities',es:'Oportunidades de mate'},fork:{en:'Double attacks',es:'Ataques dobles'},development:{en:'Opening decisions',es:'Decisiones de apertura'},forcing:{en:'Forcing moves',es:'Jugadas forzantes'}};
 export const HABITS={
