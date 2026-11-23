@@ -1,6 +1,6 @@
 import { Chess } from './vendor/chess.js';
 import { MODEL_PRESETS, PROVIDERS, modelRates, buildRequest, readResponse } from './models.js';
-import {localReview,exerciseFeedback} from './learning.js?v=board-guide';
+import {localReview,exerciseFeedback} from './learning.js?v=plain-coaching';
 import {candidateTraining,PATTERNS} from './training.js';
 export {MODEL_PRESETS} from './models.js';
 

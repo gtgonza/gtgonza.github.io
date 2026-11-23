@@ -47,6 +47,31 @@ function materialInLine(line,human){
   return total+(move.color===human?change:-change);
  },0);
 }
+function whatChangedHands(line,human,language){
+ const en=language==='en';
+ const promotion=line.find(move=>move.promotion);
+ if(promotion){
+  const yours=promotion.color===human;
+  return en?`${yours?'Your pawn':'The opponent’s pawn'} reaches ${promotion.to} and becomes a ${englishNames[promotion.promotion]}.`:
+   `${yours?'Tu peón':'El peón del rival'} llega a ${promotion.to} y se convierte en ${names[promotion.promotion]}.`;
+ }
+ const captures=line.filter(move=>move.captured);
+ const [first,reply]=captures;
+ if(captures.length===2&&first.color!==reply.color&&reply.captureSquare===first.to&&line.indexOf(reply)===line.indexOf(first)+1){
+  const defender=pieceOn(reply.piece,reply.from,en);
+  const response=en?`Then ${defender} takes back on ${reply.to}.`:`Después, ${defender} captura de vuelta en ${reply.to}.`;
+  return moveDescription(first,human,language)+' '+response;
+ }
+ const describe=side=>new Intl.ListFormat(language).format(captures
+  .filter(move=>move.color===side).map(move=>pieceOn(move.captured,move.captureSquare,en)));
+ const gained=describe(human),lost=describe(human==='w'?'b':'w');
+ if(gained&&lost)return en?`You take ${gained}. The opponent takes ${lost} from you.`:`Capturas ${gained}. El rival captura ${lost}.`;
+ if(lost)return en?`The opponent takes ${lost}. You get no piece back in this line.`:
+  `El rival captura ${lost}. En esta secuencia, no capturas otra pieza a cambio.`;
+ if(gained)return en?`You take ${gained} and keep your own pieces in this line.`:
+  `Capturas ${gained} y conservas tus piezas en esta secuencia.`;
+ return '';
+}
 export function explainReplay(line,human,language='es'){
  const en=language==='en';
  const last=line.at(-1);
@@ -60,13 +85,8 @@ export function explainReplay(line,human,language='es'){
    :(en?`The king on ${king.square} has no way out of check.`:`El rey de ${king.square} no tiene cómo salir del jaque.`);
   return moveDescription(last,human,language)+' '+detail;
  }
- const balance=materialInLine(line,human);
- const memorable=line.find(move=>move.captured&&move.color===(balance<0?(human==='w'?'b':'w'):human));
- if(balance&&memorable){
-  const points=Math.abs(balance),value=en?(points===1?'one pawn':'about '+points+' pawns'):(points===1?'un peón':'unos '+points+' peones');
-  const difference=balance>0?(en?'you gain':'ganas'):(en?'you give up':'pierdes');
-  return moveDescription(memorable,human,language)+' '+(en?`After these moves, ${difference} material worth ${value}.`:`Tras estas jugadas, ${difference} material por valor de ${value}.`);
- }
+ const exchange=whatChangedHands(line,human,language);
+ if(exchange)return exchange;
  const threat=line.find(move=>move.color!==human&&(move.check||move.captured))||line.find(move=>move.color!==human);
  if(threat)return moveDescription(threat,human,language);
  return last?moveDescription(last,human,language):'';
@@ -76,8 +96,6 @@ export function missedOpportunity(line,alternative,human,language='es'){
  if(missedMate)return alternative.length===1
   ?(en?'You had checkmate in one from the starting position.':'En la posición inicial tenías jaque mate en una jugada.')
   :(en?'The alternative shows a sequence that ends in checkmate for you.':'La alternativa muestra una secuencia que termina en jaque mate a tu favor.');
- if(alternative.length>1&&materialInLine(alternative,human)>Math.max(0,materialInLine(line,human)))
-  return en?'The alternative wins more material in the lines shown.':'En las variantes mostradas, la alternativa gana más material.';
  return '';
 }
 function targetsGained(move,board,old){
@@ -99,12 +117,38 @@ function positionalIdea(move,board,language){
  if(board.isCheck())return en
   ?'You give check, so your opponent has to deal with the threat before carrying out their own plan.'
   :'Das jaque. El rival tiene que resolverlo antes de seguir con su propio plan.';
- const center=centerSquares.filter(square=>board.attackers(square,move.color).includes(move.to));
- if(!center.length)return '';
- const squares=new Intl.ListFormat(language).format(center);
- return en
-  ?`From ${move.to}, your ${englishNames[move.piece]} controls ${squares} in the center.`
-  :`Desde ${move.to}, tu ${names[move.piece]} controla ${squares} en el centro.`;
+ const previous=new Chess(move.before);
+ return positionalClue(move,board,previous,language)?.text||'';
+}
+function positionalClue(move,board,old,language,human=move.color){
+ const en=language==='en',yours=move.color===human;
+ const lost=centerSquares.find(square=>old.attackers(square,move.color).includes(move.from)&&
+  !board.attackers(square,move.color).length&&board.attackers(square,board.turn()).length);
+ if(lost)return {
+  source:move.to,targets:[lost],title:en?'A square opens for the opponent':'El rival gana un lugar donde poner una pieza',
+  text:en?`The marked piece used to cover ${lost}. ${yours?'The opponent can use':'You can use'} that square without worrying about a capture by the marked piece.`:
+   `Antes, la pieza marcada podía atacar a quien entrara en ${lost}. ${yours?'Si el rival quiere usar esa casilla, ya no tiene que preocuparse por esa pieza.':'Si quieres usar esa casilla, esa pieza ya no te la disputa.'}`
+ };
+ const gained=centerSquares.find(square=>board.attackers(square,move.color).includes(move.to)&&!old.attackers(square,move.color).length);
+ if(gained){
+  const piece=pieceOn(board.get(move.to).type,move.to,en);
+  const occupant=board.get(gained);
+  const text=occupant?.color===move.color
+   ?(en?`${piece} now helps guard ${pieceOn(occupant.type,gained,en)}. If that piece gets taken, the marked piece could take back.`:
+     `Ahora ${piece} ayuda a cuidar ${pieceOn(occupant.type,gained,en)}. Si capturan esa pieza, la pieza marcada podría capturar a cambio.`)
+   :(en?`${piece} now points at ${gained}. ${yours?'If your opponent wants to put a piece there, they have to check':'If you want to put a piece there, check'} whether the marked piece can take it.`:
+     `Ahora ${piece} apunta a ${gained}. ${yours?'Si el rival quiere poner una pieza ahí, tiene que mirar':'Si quieres poner una pieza ahí, fíjate en'} si la pieza marcada puede capturarla.`);
+  return {source:move.to,targets:[gained],title:en?'What changes on '+gained:'Qué cambia en '+gained,text};
+ }
+ if(board.get(move.from))return null;
+ const freed=old.attackers(move.from,move.color).find(square=>
+  ['b','q','r'].includes(old.get(square)?.type)&&board.attackers(move.from,move.color).includes(square));
+ if(!freed)return null;
+ return {
+  source:freed,targets:[move.from],title:en?'Give a piece room to move':'Dale espacio a una pieza',
+  text:en?`The move clears the way for ${pieceOn(board.get(freed).type,freed,en)}. On a later turn, that piece can come out through ${move.from}.`:
+   `Ahora ${pieceOn(board.get(freed).type,freed,en)} tiene por dónde salir. En un próximo turno puede pasar por ${move.from} para entrar en juego.`
+ };
 }
 function coveredEscape(board,king,checker,color){
  return SQUARES.find(square=>square!==king.square&&
@@ -169,19 +213,13 @@ export function replayCoachStep(line,index,human,language='es'){
  if(newTargets.length){
   const squares=newTargets.map(piece=>piece.square);
   const pieces=new Intl.ListFormat(language).format(newTargets.map(piece=>pieceOn(piece.type,piece.square,en)));
-  return {source,targets:squares,title:en?'Follow the new attack':'Sigue el nuevo ataque',text:en?`The circled piece now attacks ${pieces}. Look for a way those pieces could be defended.`:`La pieza marcada ahora ataca ${pieces}. Fíjate en cómo se podrían defender.`};
+  const question=newTargets.length>1
+   ?(en?'If one of them moves away, can the other still be taken?':'Si una de ellas se mueve para salvarse, ¿la otra queda al alcance?')
+   :(en?'If the marked piece takes it, can anything take back?':'Si la pieza marcada la captura, ¿hay otra pieza que pueda responder?');
+  return {source,targets:squares,title:en?'Follow the new attack':'Sigue el nuevo ataque',text:(en?`The circled piece now attacks ${pieces}.`:`La pieza marcada ahora ataca ${pieces}.`)+' '+question};
  }
- const gained=centerSquares.filter(square=>board.attackers(square,move.color).includes(source)&&!old.attackers(square,move.color).length);
- const lost=centerSquares.filter(square=>old.attackers(square,move.color).includes(move.from)&&!board.attackers(square,move.color).length&&board.attackers(square,board.turn()).length);
- const changed=lost.length?lost:gained;
- if(changed.length){
-  const targets=changed.slice(0,2),squares=new Intl.ListFormat(language).format(targets);
-  const text=lost.length
-   ?(en?`This side gives up control of ${squares}. The other side still attacks there.`:`Este lado deja de controlar ${squares}. El otro todavía ataca esas casillas.`)
-   :(en?`The marked piece now controls ${squares} in the center.`:`La pieza marcada ahora controla ${squares} en el centro.`);
-  return {source,targets,title:en?'Watch the center squares':'Fíjate en el centro',text};
- }
- return {source,targets:[],title:en?'Follow the moving piece':'Sigue la pieza que se mueve',text:description};
+ return positionalClue(move,board,old,language,human)||
+  {source,targets:[],title:en?'Follow the moving piece':'Sigue la pieza que se mueve',text:description};
 }
 export function compareReplayLines(original,alternative,human,language='es'){
  const en=language==='en';
@@ -202,10 +240,10 @@ export function compareReplayLines(original,alternative,human,language='es'){
   return en?`Your move allows the opponent to take ${victim}. The alternative takes away that immediate capture.`:
    `Con tu jugada, el rival puede capturar ${victim}. La alternativa evita esa captura inmediata.`;
  }
- const describe=value=>value===0?(en?'material stays even':'el material queda igual')
-  :en?`you ${value<0?'lose':'gain'} about ${Math.abs(value)} in material`
-   :`${value<0?'pierdes':'ganas'} material por valor de ${Math.abs(value)} ${Math.abs(value)===1?'peón':'peones'}`;
- return en?`In the lines shown, ${describe(old)} with your move. With the alternative, ${describe(better)}.`:`En las variantes mostradas, con tu jugada ${describe(old)}. Con la alternativa, ${describe(better)}.`;
+ const describe=line=>whatChangedHands(line,human,language)||
+  (en?'The two sides keep all their pieces in this line.':'En esta secuencia, ambos conservan sus piezas.');
+ return en?`Your move: ${describe(original)}\nAlternative: ${describe(alternative)}`:
+  `Tu jugada: ${describe(original)}\nAlternativa: ${describe(alternative)}`;
 }
 export function replyFacts(fen,uci,language='es'){
  if(!uci)return null;try{
@@ -226,7 +264,7 @@ export function localReview(mine,counts,language='es'){
  if(checks)advice.push(`Te falta comprobar mejor los jaques del rival: en ${checks} de tus errores, su respuesta calculada daba jaque${facts.some(f=>f.mate)?', incluso mate en alguna posición':''}. Antes de mover, mira primero la seguridad de tu rey.`);
  if(captures)advice.push(`Revisa las piezas que dejas al alcance del rival: en ${captures} de tus errores, la respuesta calculada capturaba una pieza tuya. Antes de atacar, comprueba qué puede capturarte.`);
  if(!advice.length&&issues.length)advice.push('Te conviene comparar tu idea con una respuesta concreta del rival. Encontrar una jugada atractiva es solo el primer paso: imagina qué jugaría el otro antes de decidir.');
- if(!issues.length)advice.push('No aparecen pérdidas de al menos medio peón entre tus jugadas evaluadas. Mantén la costumbre de comprobar la respuesta rival; una revisión local breve puede pasar por alto ideas más profundas.');
+ if(!issues.length)advice.push('En las jugadas revisadas no apareció un error claro para practicar. Sigue preguntándote qué podría jugar el rival justo después de tu jugada.');
  const first=issues[0];
  const start=first?`Parte por la jugada ${Math.ceil(first.ply/2)}${first.color==='w'?'.':'...'} ${first.san}. Ahí apareció tu ${first.kind==='inaccuracy'?'primera imprecisión':first.kind==='blunder'?'primer error grave':'primer error'} detectado. Vuelve a esa posición y pregúntate qué respuesta no tuviste en cuenta. Después prueba otra decisión en el tablero de práctica.`:'Puedes revisar tus decisiones seleccionándolas en el registro.';
  const count=(n,one,many)=>`${n} ${n===1?one:many}`;
@@ -278,7 +316,7 @@ function englishReview(mine,counts){
  if(checks)advice.push(`Check your opponent's checks more carefully: the calculated response gave check in ${checks} of your mistakes${facts.some(f=>f.mate)?', including checkmate in at least one position':''}. Before moving, look at your king's safety.`);
  if(captures)advice.push(`Watch the pieces you leave exposed: the calculated response captured one of your pieces in ${captures} of your mistakes. Before attacking, check what your opponent can capture.`);
  if(!advice.length&&issues.length)advice.push('Compare your idea with a concrete reply. Finding an attractive move is only the first step: imagine what your opponent would play before you decide.');
- if(!issues.length)advice.push('No losses of at least half a pawn were found among your evaluated moves. Keep checking the reply; a short local search can miss deeper ideas.');
+ if(!issues.length)advice.push('The review found no clear mistake to practice. Keep asking what your opponent could play right after your move.');
  const first=issues[0],kind=first?.kind==='blunder'?'blunder':first?.kind==='inaccuracy'?'inaccuracy':'mistake';
  const count=(n,one,many=one+'s')=>`${n} ${n===1?one:many}`;
  return `In ${count(mine.length,'move of yours','moves of yours')}, I found ${count(counts.blunder,'blunder')}, ${count(counts.mistake,'mistake')} and ${count(counts.inaccuracy,'inaccuracy','inaccuracies')}.\n\nWhat to improve\n${advice.join('\n\n')}\n\n`+(first?`Start with move ${Math.ceil(first.ply/2)}${first.color==='w'?'.':'...'} ${first.san}. This was your first detected ${kind}. Return to that position and ask which reply you missed. Then try a different decision in the puzzle.`:'Select a move in the move list to review your decisions.');

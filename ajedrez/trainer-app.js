@@ -1,10 +1,10 @@
 import {Chess} from './vendor/chess.js';
-import {BrowserEngine,puzzleLength} from './core.js?v=board-guide';
-import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=board-guide';
+import {BrowserEngine,puzzleLength} from './core.js?v=plain-coaching';
+import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=plain-coaching';
 import {PuzzleLibrary,latestGame} from './library.js';
 import {getLanguage,setLanguage} from './i18n.js';
 import {openBrowserDatabase} from './browser-db.js';
-import {replayLine,replayLessonLine,explainReplay,replayCoachStep,compareReplayLines} from './learning.js?v=board-guide';
+import {replayLine,replayLessonLine,explainReplay,replayCoachStep,compareReplayLines} from './learning.js?v=plain-coaching';
 const $=id=>document.getElementById(id),t=(en,es)=>getLanguage()==='es'?es:en;
 const locale=()=>getLanguage()==='es'?'es-CL':'en-US';
 let browserStorage;try{browserStorage=localStorage;}catch{browserStorage={getItem:()=>null,setItem:()=>{throw Error('Storage unavailable');}};}

@@ -121,6 +121,7 @@
 .replay-caption h3, .replay-takeaway h3 { margin: 0 0 3px; font-size: 15px; }
 .replay-caption p, .replay-takeaway p { margin: 0; font-size: 14px; }
 .replay-takeaway { margin-top: 9px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 4px; }
+.replay-takeaway p { white-space: pre-line; }
 .replay-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .replay-actions .primary { width: auto; padding: 10px 14px; }
 #replayCount { margin-inline-start: auto; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
