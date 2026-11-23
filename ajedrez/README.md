@@ -22,6 +22,8 @@ Pattern summaries include all evaluated errors, not just the three selected puzz
 
 The default search is about 850 ms per position; puzzle validation uses about 1300 ms per position. Labels and even counts can change with search depth. Inaccuracy starts at a 50-centipawn loss, mistake at 100 and blunder at 200. These are practical training thresholds. An import of 26 own moves may take roughly a minute depending on the device.
 
+In a streak, the theme appears after the first attempt. A session mixes themes when possible and suggests one habit for the next game. The progress panel separates first encounters with the theme hidden from scheduled reviews. It compares up to five recent games with up to five earlier games by the same player and TimeControl. Puzzle length starts from source Elo guidance and can adjust by one step based on recent unassisted performance.
+
 ## Your data
 
 The bank is stored in this browser's IndexedDB, with a localStorage fallback if IndexedDB is unavailable. Earlier prototype storage keys are preserved. Export JSON backups to keep or transfer games, puzzles, attempt logs and schedules. Restoring merges records without duplicating games or attempt IDs. This version has no cloud synchronization or account. Clearing browser/site data removes its local database. Current limits are 500 games, 1500 puzzles and a 100 MB backup import.

@@ -7,11 +7,14 @@ import {openBrowserDatabase} from './browser-db.js';
 const $=id=>document.getElementById(id),t=(en,es)=>getLanguage()==='es'?es:en;
 const locale=()=>getLanguage()==='es'?'es-CL':'en-US';
 let browserStorage;try{browserStorage=localStorage;}catch{browserStorage={getItem:()=>null,setItem:()=>{throw Error('Storage unavailable');}};}
+const libraryLock='between-bishops-library-write';
 let databaseNotice='';
-try{browserStorage=await openBrowserDatabase({legacyStorage:browserStorage});}catch{databaseNotice='Using limited browser storage. Keep exported backups. / Almacenamiento limitado: conserva respaldos exportados.';}
-const library=new PuzzleLibrary({storage:browserStorage}),engine=new BrowserEngine(),analyzer=new ImportedAnalyzer(engine);
+try{const open=()=>openBrowserDatabase({legacyStorage:browserStorage});browserStorage=await (navigator.locks?navigator.locks.request(libraryLock,open):open());}catch{databaseNotice='Using limited browser storage. Keep exported backups. / Almacenamiento limitado: conserva respaldos exportados.';}
+let library=new PuzzleLibrary({storage:browserStorage});
+const engine=new BrowserEngine(),analyzer=new ImportedAnalyzer(engine);
 let tab='import',selectedGameId=null,reviewMovePly=null,busy=false,analysisAbort=null;
 let runner=null,queue=[],used=new Set(),phase='challenge',selected=null,flipped=false,motion=null,previewFen=null,wrongMove=null,transitionTimer=null,extraPractice=false,finishedSet=false;
+let blindSession=false,sessionHabit=null,habitRevealed=false;
 const boardState=new WeakMap();
 $('username').value=library.username;
 function notice(message){$('notice').textContent=message||'';$('notice').hidden=!message;}
@@ -22,7 +25,7 @@ function resultLabel(g){const win=g.result===(g.human==='w'?'1-0':'0-1');return 
 function dueLabel(p){return p.dueAt<=Date.now()?t('Due now','Pendiente ahora'):new Date(p.dueAt).toLocaleString(locale(),{dateStyle:'medium',timeStyle:'short'});}
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function button(text,action,className=''){const b=element('button',text,className);b.type='button';b.onclick=action;return b;}
-function switchTab(value){tab=value;for(const name of ['import','bank','streak'])$(name+'Tab').hidden=name!==value;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===value));if(value==='bank')renderBank();if(value==='streak')renderStreak();}
+function switchTab(value){tab=value;for(const name of ['import','bank','streak'])$(name+'Tab').hidden=name!==value;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===value));if(value==='bank'){renderBank();renderProgress();}if(value==='streak')renderStreak();}
 function localize(){
  document.documentElement.lang=getLanguage();document.title='Between Bishops · '+t('Learn from your mistakes','Aprende de tus errores');
  for(const e of document.querySelectorAll('[data-en][data-es]'))e.textContent=e.dataset[getLanguage()];
@@ -30,11 +33,32 @@ function localize(){
  $('pgn').placeholder=t('[White "YourName"]\n[Black "Opponent"]\n\n1. e4 e5 2. Nf3 Nc6 ...','[White "TuUsuario"]\n[Black "Rival"]\n\n1. e4 e5 2. Nf3 Nc6 ...');
  $('puzzleBoard').setAttribute('aria-label',t('Puzzle board','Tablero del puzle'));$('reviewBoard').setAttribute('aria-label',t('Original game review board','Tablero de revisión de la partida'));renderAll();
 }
-async function work(fn){if(busy)return;busy=true;document.querySelectorAll('button,input,select,textarea').forEach(e=>e.disabled=true);if(analysisAbort)$('cancelAnalysis').disabled=false;try{await fn();await browserStorage.flush?.();}catch(e){if(e.name==='AbortError')notice(t('Analysis paused. Your imported game and completed calculations are saved; paste it again to resume.','Análisis pausado. La partida y los cálculos completados quedaron guardados; pégala otra vez para continuar.'));else notice(e.message);}finally{busy=false;document.querySelectorAll('button,input,select,textarea').forEach(e=>e.disabled=false);$('puzzleThinking').hidden=true;renderAll();}}
+async function work(fn){
+ if(busy)return;
+ if(!navigator.locks){notice(t('Use a browser with Web Locks support to safely save training progress.','Usa un navegador compatible con Web Locks para guardar el progreso de forma segura.'));return;}
+ busy=true;
+ document.querySelectorAll('button,input,select,textarea').forEach(e=>e.disabled=true);
+ if(analysisAbort)$('cancelAnalysis').disabled=false;
+ try{
+  await navigator.locks.request(libraryLock,async()=>{
+   await browserStorage.flush?.();
+   await browserStorage.refresh?.();
+   library=new PuzzleLibrary({storage:browserStorage});
+   if(library.loadError)throw new Error(library.loadError);
+   try{await fn();}finally{await browserStorage.flush?.();}
+  });
+ }catch(e){
+  notice(e.name==='AbortError'?t('Analysis paused. Completed calculations were saved.','Análisis pausado. Se guardaron los cálculos completados.'):e.message);
+ }finally{
+  busy=false;
+  document.querySelectorAll('button,input,select,textarea').forEach(e=>e.disabled=false);
+  $('puzzleThinking').hidden=true;renderAll();
+ }
+}
 function renderAll(){
  const latest=latestGame(library.games);$('currentElo').textContent=latest?library.currentElo:'—';$('eloSource').textContent=latest?ownName(latest)+' · '+gameDate(latest):t('From your latest game','Según tu última partida');
  $('gameTotal').textContent=library.games.length;$('gameTotal').nextElementSibling.textContent=library.games.length===1?t('game','partida'):t('games','partidas');$('puzzleTotal').textContent=library.puzzles.length;$('dueTotal').textContent=library.queue().length;$('bestStreak').textContent=library.data.streak.best;$('streakCount').textContent=library.data.streak.current;
- renderHistory();renderReview();renderBank();renderStreak();
+ renderHistory();renderReview();renderBank();renderStreak();renderProgress();
 }
 function renderHistory(){
  const host=$('gameHistory');host.replaceChildren();if(!library.games.length){host.append(element('p',t('No games imported yet.','Aún no hay partidas importadas.'),'muted'));return;}
@@ -76,13 +100,34 @@ async function importGame(){
   library.addGame(result);$('analysisText').textContent=t('Analysis complete','Análisis completado');const added=library.addPuzzles(makePuzzles(result,{weaknesses:library.weaknesses()}));notice(t('Game saved. '+added+' new puzzles added to your bank.','Partida guardada. '+added+' puzles nuevos añadidos al banco.'));
  });analysisAbort=null;$('cancelAnalysis').disabled=true;
 }
+function renderProgress(){
+ const host=$('trainingProgress'),pattern=$('patternFilter').value;
+ const filter=pattern&&pattern!=='all'?pattern:undefined;
+ const {fresh,repeated}=library.trainingProgress(filter);
+ const games=library.gameProgress(filter);
+ const entry=(title,body)=>{const row=element('div',undefined,'weakness-row');row.append(element('strong',title),element('p',body));return row;};
+ const score=row=>row.total?t(row.clean+' / '+row.total+' solved cleanly',row.clean+' / '+row.total+' resueltos sin ayuda ni fallos'):t('No scored attempts yet.','Todavía sin intentos medidos.');
+ host.replaceChildren(entry(t('First look · theme hidden','Primera vez · tema oculto'),score(fresh)),entry(t('Scheduled repeat reviews','Repasos programados'),score(repeated)));
+ const rate=group=>{
+  if(!group.moves)return t('No sample yet','Todavía sin muestra');
+  const percent=new Intl.NumberFormat(locale(),{style:'percent',maximumFractionDigits:1}).format(group.errors/group.moves);
+  return percent+t(' ('+group.errors+'/'+group.moves+' evaluated moves, '+group.games+' games)',' ('+group.errors+'/'+group.moves+' jugadas evaluadas, '+group.games+' partidas)');
+ };
+ const comparison=games?t('Time control '+games.control+'. Latest: ','Ritmo '+games.control+'. Recientes: ')+rate(games.recent)+t('. Previous: ','. Anteriores: ')+rate(games.previous)+'.':t('Import PGNs with a TimeControl tag to compare games at the same pace.','Importa PGN con la etiqueta TimeControl para comparar partidas del mismo ritmo.');
+ host.append(entry(t('In your games','En tus partidas'),comparison));
+}
 function activeFen(){if(!runner)return new Chess().fen();if(phase==='prelude')return runner.puzzle.beforeOpponentFen||runner.puzzle.fen;if(phase==='checking')return previewFen||runner.fen;if(phase==='feedback'||phase==='wrong')return runner.answer?.afterFen||runner.fen;return runner.fen;}
 function renderStreak(){
  $('queueInfo').textContent=t('Uses your latest game Elo (','Usa el Elo de tu última partida (')+library.currentElo+t('), repeated patterns and scheduled reviews.', '), los patrones repetidos y los repasos pendientes.');$('streakCount').textContent=library.data.streak.current;
+ const showHabit=sessionHabit&&(habitRevealed||finishedSet);
+ $('sessionHabit').hidden=!showHabit;
+ $('habitText').textContent=showHabit?(HABITS[sessionHabit]||HABITS.calculation)[getLanguage()]:'';
  $('streakWorkspace').hidden=!runner;$('streakEmpty').hidden=!!runner;
  if(!runner){const due=library.queue().length;$('streakEmptyTitle').textContent=finishedSet?t('Set complete','Serie terminada'):due?t('Your next review is ready','Tu próximo repaso está listo'):t('You are up to date','Estás al día');$('streakEmptyText').textContent=library.puzzles.length?t(due+' puzzles are due at your current level.','Hay '+due+' puzles pendientes para tu nivel actual.'):t('Import a game to create your first personal puzzles.','Importa una partida para crear tus primeros puzles personales.');$('startStreak').disabled=busy||!due;$('practiceAhead').disabled=busy||!library.puzzles.length;return;}
  const p=runner.puzzle,g=library.game(p.gameId);$('puzzleContext').textContent=gameDate(g)+' · '+t('From your move ','De tu jugada ')+Math.ceil(p.ply/2)+' · Elo '+p.elo;
- $('puzzleTheme').textContent=theme(p.pattern);$('puzzleTitle').textContent=runner.done?t('Puzzle complete','Puzle completado'):t('What would you play?','¿Qué jugarías?');$('puzzleSource').textContent=g.white+' vs '+g.black+' · '+t('You play ','Juegas con ')+(p.human==='w'?t('White','blancas'):t('Black','negras'));
+ const showTheme=!blindSession||runner.attempts.length>0;
+ $('puzzleTheme').hidden=!showTheme;
+ $('puzzleTheme').textContent=showTheme?theme(p.pattern):'';$('puzzleTitle').textContent=runner.done?t('Puzzle complete','Puzle completado'):t('What would you play?','¿Qué jugarías?');$('puzzleSource').textContent=g.white+' vs '+g.black+' · '+t('You play ','Juegas con ')+(p.human==='w'?t('White','blancas'):t('Black','negras'));
  $('puzzleProgress').textContent=runner.step+'/'+p.targetSteps+' '+t('of your moves solved','jugadas tuyas resueltas')+(extraPractice?t(' · Extra practice',' · Práctica extra'):'');
  $('puzzlePrompt').textContent=phase==='prelude'?t('Watch the opponent move…','Observa la jugada del rival…'):runner.done?t('Solved. Read the explanation, then continue.','Resuelto. Lee la explicación y continúa.'):phase==='wrong'?t('Not this move. The position will reset.','Esa jugada no. Volvemos al paso pendiente.'):phase==='feedback'?t('Good move. Your opponent replies…','Buena jugada. El rival responde…'):t('Find move ','Encuentra la jugada ')+(runner.step+1)+'/'+p.targetSteps;
  $('puzzleFeedback').textContent=runner.answer?runner.answer.feedbackTexts[getLanguage()]:'';$('puzzleFeedback').className='prose'+(runner.answer?(runner.answer.good?' feedback-good':' feedback-bad'):'');
@@ -92,13 +137,43 @@ function renderStreak(){
 }
 function activatePuzzle(id){
  clearTimeout(transitionTimer);selected=null;wrongMove=null;previewFen=null;const stored=library.puzzle(id);if(!stored){runner=null;renderStreak();return;}used.add(id);
- const cap=library.currentElo<600?2:library.currentElo<1100?3:4;const puzzle={...structuredClone(stored),targetSteps:Math.min(cap,puzzleLength(stored.fen,stored.original.before?.pv||stored.solution))};
- runner=new PuzzleRunner(puzzle,engine);flipped=puzzle.human==='b';phase=puzzle.beforeOpponentFen?'prelude':'challenge';renderStreak();
+ const cap=library.stepLimit();const puzzle={...structuredClone(stored),targetSteps:Math.min(cap,puzzleLength(stored.fen,stored.original.before?.pv||stored.solution))};
+ runner=new PuzzleRunner(puzzle,engine);library.openPuzzle(id,runner.id,blindSession);flipped=puzzle.human==='b';phase=puzzle.beforeOpponentFen?'prelude':'challenge';renderStreak();
  if(phase==='prelude'){const runId=runner.id;transitionTimer=setTimeout(()=>{if(runner?.id!==runId)return;phase='challenge';motion=puzzle.opponentMove;renderStreak();},650);}
 }
-function startQueue(ahead=false){if(busy)return;queue=library.queue({ahead}).map(p=>p.id);used=new Set();finishedSet=false;extraPractice=ahead;library.data.streak.current=0;try{library.save();}catch(e){notice(e.message);}switchTab('streak');if(queue.length)activatePuzzle(queue.shift());else{runner=null;renderStreak();}}
-function startSingle(id){if(busy)return;queue=[];used=new Set();finishedSet=false;extraPractice=library.puzzle(id).dueAt>Date.now();library.data.streak.current=0;try{library.save();}catch(e){notice(e.message);}switchTab('streak');activatePuzzle(id);$('streakTab').scrollIntoView({behavior:'smooth',block:'start'});}
-function nextPuzzle(){if(busy||!runner?.done)return;const next=queue.find(id=>!used.has(id));queue=queue.filter(id=>id!==next);if(next)activatePuzzle(next);else{runner=null;finishedSet=true;renderAll();}}
+function startQueue(ahead=false){
+ return work(()=>{
+  const ranked=library.queue({ahead});
+  sessionHabit=ranked[0]?.pattern||null;
+  const nextSet=[];
+  while(ranked.length){
+   const previous=nextSet.at(-1)?.pattern;
+   const due=ranked[0].dueAt<=Date.now();
+   const different=ranked.findIndex(p=>p.pattern!==previous&&(p.dueAt<=Date.now())===due);
+   nextSet.push(...ranked.splice(Math.max(0,different),1));
+  }
+  queue=nextSet.map(p=>p.id);used=new Set();finishedSet=false;extraPractice=ahead;
+  blindSession=true;habitRevealed=false;library.data.streak.current=0;library.save();
+  clearTimeout(transitionTimer);runner=null;switchTab('streak');
+  if(queue.length)activatePuzzle(queue.shift());
+ });
+}
+function startSingle(id){
+ return work(()=>{
+  const puzzle=library.puzzle(id);if(!puzzle)return;
+  queue=[];used=new Set();finishedSet=false;extraPractice=puzzle.dueAt>Date.now();
+  blindSession=false;sessionHabit=puzzle.pattern;habitRevealed=false;
+  library.data.streak.current=0;library.save();switchTab('streak');activatePuzzle(id);
+  $('streakTab').scrollIntoView({behavior:'smooth',block:'start'});
+ });
+}
+function nextPuzzle(){
+ if(busy||!runner?.done)return;
+ return work(()=>{
+  const next=queue.find(id=>!used.has(id));queue=queue.filter(id=>id!==next);
+  if(next)activatePuzzle(next);else{runner=null;finishedSet=true;}
+ });
+}
 function drawBoard(host,fen,{flip=false,interactive=false,selected=null,hint=null,wrong=null,motion=null}={}){
  const c=new Chess(fen),pieces=Object.fromEntries(c.board().flat().filter(Boolean).map(p=>[p.square,p])),legal=interactive?c.moves({verbose:true}):[];
  const signature=fen+'|'+flip;const old=boardState.get(host),moves=[];
@@ -118,7 +193,7 @@ async function squareClick(square){
  if(!choices.length){selected=legal.some(m=>m.from===square)?square:null;renderStreak();return;}
  const from=selected;let piece;if(choices.some(m=>m.promotion)){piece=await promotion();if(!piece)return;}const move=c.move({from,to:square,promotion:piece||'q'});selected=null;previewFen=c.fen();phase='checking';motion={from,to:square,san:move.san,color:move.color};notice(null);
  await work(async()=>{
-  renderStreak();try{const answer=await runner.move(from+square+(piece||''));library.recordAttempt(runner.puzzle.id,answer);if(runner.done)library.complete(runner.puzzle.id,{runId:runner.id,failed:runner.failed,assisted:runner.assisted});phase=answer.good?'feedback':'wrong';wrongMove=answer.good?null:{from,to:square};renderStreak();
+  renderStreak();try{const answer=await runner.move(from+square+(piece||''));library.recordAttempt(runner.puzzle.id,answer);if(runner.puzzle.pattern===sessionHabit)habitRevealed=true;if(runner.done)library.complete(runner.puzzle.id,{runId:runner.id,failed:runner.failed,assisted:runner.assisted});phase=answer.good?'feedback':'wrong';wrongMove=answer.good?null:{from,to:square};renderStreak();
    if(!runner.done){const runId=runner.id;clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>{if(runner?.id!==runId)return;wrongMove=null;phase='challenge';motion=answer.good?answer.reply:null;renderStreak();},answer.good?700:900);}
   }catch(e){phase='challenge';throw e;}finally{previewFen=null;}
  });
@@ -127,10 +202,10 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 $('importGame').onclick=importGame;$('cancelAnalysis').onclick=()=>analysisAbort?.abort();
 $('language').onclick=()=>{if(busy)return;setLanguage(getLanguage()==='en'?'es':'en');localize();};document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 $('pgnFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;if(file.size>250000){notice(t('PGN file exceeds 250 KB.','El archivo supera 250 KB.'));return;}$('pgn').value=await file.text();};
-$('patternFilter').onchange=renderBank;$('eloFilter').onchange=renderBank;$('bankStreak').onclick=()=>startQueue(false);$('startStreak').onclick=()=>startQueue(false);$('practiceAhead').onclick=()=>startQueue(true);$('nextPuzzle').onclick=nextPuzzle;$('flip').onclick=()=>{flipped=!flipped;renderStreak();};
+$('patternFilter').onchange=()=>{renderBank();renderProgress();};$('eloFilter').onchange=renderBank;$('bankStreak').onclick=()=>startQueue(false);$('startStreak').onclick=()=>startQueue(false);$('practiceAhead').onclick=()=>startQueue(true);$('nextPuzzle').onclick=nextPuzzle;$('flip').onclick=()=>{flipped=!flipped;renderStreak();};
 $('hint').onclick=()=>work(async()=>{await runner.hint();library.recordHint(runner.puzzle.id,runner.id,runner.step+1);renderStreak();});
 $('restartPuzzle').onclick=()=>{clearTimeout(transitionTimer);if(runner.done)runner=new PuzzleRunner(runner.puzzle,engine);else runner.restart();selected=null;wrongMove=null;phase='challenge';renderStreak();};
-$('exportData').onclick=()=>download('between-bishops-backup-'+new Date().toISOString().slice(0,10)+'.json',library.export(),'application/json');
-$('restoreData').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000000)throw Error(t('Backup is too large.','El respaldo es demasiado grande.'));library.restore(await file.text());await browserStorage.flush?.();notice(t('Backup merged without duplicating games or attempts.','Respaldo integrado sin duplicar partidas ni intentos.'));renderAll();}catch(error){notice(error.message);}finally{e.target.value='';}};
+$('exportData').onclick=()=>{download('between-bishops-backup-'+new Date().toISOString().slice(0,10)+'.json',library.export(),'application/json');};
+$('restoreData').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000000)throw Error(t('Backup is too large.','El respaldo es demasiado grande.'));const backup=await file.text();await work(()=>{library.restore(backup);notice(t('Backup merged without duplicating games or attempts.','Respaldo integrado sin duplicar partidas ni intentos.'));});}catch(error){notice(error.message);}finally{e.target.value='';}};
 window.addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
 localize();if(databaseNotice)notice(databaseNotice);if(library.loadError)notice(library.loadError);if(library.games.length){selectedGameId=library.games.at(-1).id;renderReview();}

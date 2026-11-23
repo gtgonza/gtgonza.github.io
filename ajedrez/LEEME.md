@@ -22,6 +22,8 @@ El resumen de patrones usa todos los errores evaluados, no solo los tres elegido
 
 El análisis usa unos 850 ms por posición y los puzles unos 1300 ms por posición. Las etiquetas y recuentos pueden cambiar con la profundidad. Se usa imprecisión desde 50 centipeones, error desde 100 y error grave desde 200. Son umbrales prácticos de entrenamiento. Una partida de 26 jugadas propias puede tardar alrededor de un minuto, según el dispositivo.
 
+En la racha, el tema se revela después del primer intento. La sesión alterna temas cuando hay variedad y propone un hábito para la siguiente partida. El panel de progreso separa la primera exposición con tema oculto de los repasos programados. Para las partidas compara hasta cinco recientes con hasta cinco anteriores del mismo jugador y ritmo, según la etiqueta TimeControl. El largo de los puzles parte del Elo y puede subir o bajar un paso con los resultados recientes sin ayuda.
+
 ## Datos y respaldos
 
 El banco se guarda en IndexedDB de este navegador; si no está disponible se usa localStorage con capacidad limitada. No se borran las claves del prototipo anterior. Exporta respaldos JSON para conservar o trasladar partidas, puzles, intentos y repasos. Restaurar integra registros sin duplicar partidas ni IDs de intentos. No hay cuenta ni sincronización en la nube. Borrar los datos del sitio elimina la base local. Límites actuales: 500 partidas, 1500 puzles y respaldos de hasta 100 MB.

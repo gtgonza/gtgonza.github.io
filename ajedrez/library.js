@@ -12,6 +12,8 @@ function validate(data){
 }
 export function latestGame(games){return games.slice().sort((a,b)=>gameDate(b)-gameDate(a)||String(b.importedAt).localeCompare(String(a.importedAt)))[0]||null;}
 function gameDate(g){const match=/^(\d{4})[.-](\d{2})[.-](\d{2})$/.exec(g.date||'');const time=match?Date.UTC(+match[1],+match[2]-1,+match[3]):Date.parse(g.importedAt||'');return Number.isFinite(time)?time:0;}
+const positionKey=p=>p.fen.split(' ').slice(0,4).join(' ');
+const activity=p=>p.attempts.length||p.reviews.length||p.hints?.length;
 export class PuzzleLibrary{
  constructor({storage=globalThis.localStorage,now=()=>Date.now()}={}){this.storage=storage;this.now=now;this.data=initial();this.loadError=null;try{const raw=storage?.getItem(LIBRARY_KEY);if(raw)this.data=validate(JSON.parse(raw));}catch(e){this.loadError=e.message;}}
  save(){if(this.loadError)throw new Error('Existing data could not be read. Export or restore a backup before saving. / No se pudieron leer los datos existentes; restaura un respaldo antes de guardar.');try{this.storage?.setItem(LIBRARY_KEY,JSON.stringify(this.data));}catch{throw new Error('Browser storage is full or blocked. Export a backup now. / El almacenamiento está lleno o bloqueado; exporta un respaldo ahora.');}}
@@ -19,6 +21,54 @@ export class PuzzleLibrary{
  get puzzles(){return this.data.puzzles;}
  get currentElo(){return latestGame(this.games)?.elo||500;}
  get username(){return this.data.settings.username;}
+ openPuzzle(id,runId, blind){
+  const puzzle=this.puzzle(id);
+  if(!puzzle)throw new Error('Puzzle not found.');
+  const seen=this.puzzles.some(p=>positionKey(p)===positionKey(puzzle)&&(p.firstExposure||activity(p)));
+  if(!seen){puzzle.firstExposure={runId,blind,at:new Date(this.now()).toISOString()};this.save();}
+ }
+ firstExposureResults(pattern){
+  const positions=new Map();
+  for(const puzzle of this.puzzles){
+   const exposure=puzzle.firstExposure;
+   const legacyDates=[...puzzle.attempts,...puzzle.reviews,...(puzzle.hints||[])].map(item=>item.at).filter(Boolean).sort();
+   const at=exposure?.at||legacyDates[0];
+   if(!at)continue;
+   const key=positionKey(puzzle),previous=positions.get(key);
+   if(!previous||at<previous.at)positions.set(key,{puzzle,exposure,at});
+  }
+  return [...positions.values()].filter(({puzzle,exposure})=>exposure?.blind&&(!pattern||puzzle.pattern===pattern)).flatMap(({puzzle,exposure,at})=>{
+   const review=puzzle.reviews.find(r=>r.id===exposure.runId);
+   const failed=puzzle.attempts.some(a=>a.runId===exposure.runId&&!a.good)||puzzle.hints?.some(h=>h.runId===exposure.runId);
+   return review||failed?[{at,clean:!!review?.clean&&!failed}]:[];
+  }).sort((a,b)=>b.at.localeCompare(a.at));
+ }
+ trainingProgress(pattern){
+  const fresh=this.firstExposureResults(pattern);
+  const repeated=this.puzzles.filter(p=>!pattern||p.pattern===pattern).flatMap(p=>p.reviews.filter(r=>!r.early&&r.id!==p.firstExposure?.runId&&p.reviews.some(earlier=>earlier.at<r.at)));
+  return {fresh:{clean:fresh.filter(r=>r.clean).length,total:fresh.length},repeated:{clean:repeated.filter(r=>r.clean).length,total:repeated.length}};
+ }
+ stepLimit(){
+  const baseline=this.currentElo<600?2:this.currentElo<1100?3:4;
+  const recent=this.firstExposureResults().slice(0,8);
+  if(recent.length<4)return baseline;
+  const cleanRate=recent.filter(r=>r.clean).length/recent.length;
+  return Math.max(1,Math.min(4,baseline+(cleanRate>=.75?1:cleanRate<.5?-1:0)));
+ }
+ gameProgress(pattern){
+  const latest=latestGame(this.games.filter(g=>g.report));
+  const control=latest?.headers?.TimeControl;
+  if(!latest||!/^\d+(?:\+\d+)?$/.test(control||''))return null;
+  const player=g=>String(g.human==='w'?g.white:g.black).toLowerCase();
+  const comparable=this.games.filter(g=>g.report&&g.headers?.TimeControl===control&&player(g)===player(latest))
+   .sort((a,b)=>gameDate(b)-gameDate(a)||String(b.importedAt).localeCompare(String(a.importedAt))).slice(0,10);
+  const count=games=>{
+   const moves=games.flatMap(g=>g.moves.filter(m=>m.color===g.human&&Number.isFinite(m.loss)&&m.kind!=='neutral'));
+   const errors=moves.filter(m=>m.loss>=50&&(!pattern||(m.pattern||patternForMove(m))===pattern)).length;
+   return {games:games.length,moves:moves.length,errors};
+  };
+  return {control,recent:count(comparable.slice(0,5)),previous:count(comparable.slice(5,10))};
+ }
  setUsername(value){this.data.settings.username=String(value).trim();this.save();}
  game(id){return this.games.find(g=>g.id===id);}
  puzzle(id){return this.puzzles.find(p=>p.id===id);}
@@ -34,8 +84,8 @@ export class PuzzleLibrary{
   this.data.streak.solved++;this.save();return review;
  }
  queue({ahead=false,exclude=[]}={}){
-  const now=this.now(),skip=new Set(exclude),weaknesses=this.weaknesses();
-  return this.puzzles.filter(p=>!skip.has(p.id)&&(ahead||p.dueAt<=now)&&p.elo<=this.currentElo+400).sort((a,b)=>{
+  const now=this.now(),skip=new Set(exclude),weaknesses=this.weaknesses(),elo=this.currentElo;
+  return this.puzzles.filter(p=>!skip.has(p.id)&&(ahead||p.dueAt<=now)&&p.elo<=elo+400).sort((a,b)=>{
    const ad=a.dueAt<=now,bd=b.dueAt<=now;if(ad!==bd)return ad?-1:1;
    const af=weaknesses.find(w=>w.id===a.pattern)?.priority||0,bf=weaknesses.find(w=>w.id===b.pattern)?.priority||0;
    return bf-af||a.dueAt-b.dueAt||a.targetSteps-b.targetSteps||b.loss-a.loss;
@@ -43,5 +93,5 @@ export class PuzzleLibrary{
  }
  weaknesses(){const map=Object.create(null);const item=id=>map[id]||=( {id,count:0,clean:0,failed:0,due:0,gameIds:new Set()} );for(const g of this.games)for(const m of g.moves.filter(m=>m.color===g.human&&Number.isFinite(m.loss)&&m.loss>=50&&m.kind!=='neutral')){const w=item(m.pattern||patternForMove(m));w.count++;w.gameIds.add(g.id);}for(const p of this.puzzles){const w=item(p.pattern);w.clean+=p.reviews.filter(r=>r.clean).length;w.failed+=p.attempts.filter(a=>!a.good).length;w.due+=p.dueAt<=this.now()?1:0;}return Object.values(map).map(w=>({...w,games:w.gameIds.size,gameIds:undefined,priority:(w.failed+w.count*.1)/(1+w.clean)})).sort((a,b)=>b.priority-a.priority||b.count-a.count);}
  export(){return JSON.stringify({...this.data,exportedAt:new Date(this.now()).toISOString()},null,2);}
- restore(text){if(String(text).length>100000000)throw new Error('Backup too large.');const incoming=validate(JSON.parse(text));if(this.games.length+incoming.games.filter(g=>!this.game(g.id)).length>500||this.puzzles.length+incoming.puzzles.filter(p=>!this.puzzle(p.id)).length>1500)throw new Error('Combined backup exceeds library limits.');if(this.loadError)throw new Error('Keep the existing unreadable data safe; restore in a clean browser profile.');for(const game of incoming.games){const old=this.game(game.id);if(!old)this.data.games.push(game);else if(game.report&&(!old.report||String(game.analyzedAt||'')>String(old.analyzedAt||'')))Object.assign(old,game);}for(const puzzle of incoming.puzzles){const old=this.puzzle(puzzle.id);if(!old){if(this.data.puzzles.filter(p=>p.gameId===puzzle.gameId).length<3)this.data.puzzles.push(puzzle);continue;}for(const key of ['attempts','reviews']){const ids=new Set(old[key].map(x=>x.id));old[key].push(...puzzle[key].filter(x=>!ids.has(x.id)));}old.hints||=[];const hintIds=new Set(old.hints.map(h=>h.runId+':'+h.step));old.hints.push(...(puzzle.hints||[]).filter(h=>!hintIds.has(h.runId+':'+h.step)));const newer=String(puzzle.lastReviewedAt||'')>String(old.lastReviewedAt||'');if(newer){old.stage=puzzle.stage;old.dueAt=puzzle.dueAt;old.lastReviewedAt=puzzle.lastReviewedAt;}}this.data.streak.best=Math.max(this.data.streak.best,incoming.streak.best);this.save();}
+ restore(text){if(String(text).length>100000000)throw new Error('Backup too large.');const incoming=validate(JSON.parse(text));if(this.games.length+incoming.games.filter(g=>!this.game(g.id)).length>500||this.puzzles.length+incoming.puzzles.filter(p=>!this.puzzle(p.id)).length>1500)throw new Error('Combined backup exceeds library limits.');if(this.loadError)throw new Error('Keep the existing unreadable data safe; restore in a clean browser profile.');for(const game of incoming.games){const old=this.game(game.id);if(!old)this.data.games.push(game);else if(game.report&&(!old.report||String(game.analyzedAt||'')>String(old.analyzedAt||'')))Object.assign(old,game);}for(const puzzle of incoming.puzzles){const old=this.puzzle(puzzle.id);if(!old){if(this.data.puzzles.filter(p=>p.gameId===puzzle.gameId).length<3)this.data.puzzles.push(puzzle);continue;}for(const key of ['attempts','reviews']){const ids=new Set(old[key].map(x=>x.id));old[key].push(...puzzle[key].filter(x=>!ids.has(x.id)));}if(puzzle.firstExposure&&(!old.firstExposure||puzzle.firstExposure.at<old.firstExposure.at))old.firstExposure=puzzle.firstExposure;old.hints||=[];const hintIds=new Set(old.hints.map(h=>h.runId+':'+h.step));old.hints.push(...(puzzle.hints||[]).filter(h=>!hintIds.has(h.runId+':'+h.step)));const newer=String(puzzle.lastReviewedAt||'')>String(old.lastReviewedAt||'');if(newer){old.stage=puzzle.stage;old.dueAt=puzzle.dueAt;old.lastReviewedAt=puzzle.lastReviewedAt;}}this.data.streak.best=Math.max(this.data.streak.best,incoming.streak.best);this.save();}
 }
