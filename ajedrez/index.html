@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Between Bishops · Learn from your mistakes</title><link rel="icon" href="./logo.svg" type="image/svg+xml"><link rel="stylesheet" href="./trainer.css?v=plain-coaching"><script type="module" src="./trainer-app.js?v=plain-coaching"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Between Bishops · Learn from your mistakes</title><link rel="icon" href="./logo.svg" type="image/svg+xml"><link rel="stylesheet" href="./trainer.css?v=replay-arrows"><script type="module" src="./trainer-app.js?v=replay-arrows"></script></head>
 <body>
 <header class="topbar"><a class="brand" href="./"><img src="./logo.svg" width="45" height="45" alt="Bishop"><span>Between Bishops<small data-en="LEARN FROM YOUR MISTAKES" data-es="APRENDE DE TUS ERRORES">LEARN FROM YOUR MISTAKES</small></span></a><div class="top-actions"><span class="engine-label" data-en="Stockfish · local analysis" data-es="Stockfish · análisis local">Stockfish · local analysis</span><button id="language" class="flag-button" type="button"><img id="languageFlag" src="./flags/en.svg" width="27" height="18" alt="English"><span id="languageCode">EN</span></button></div></header>
 <main>
@@ -94,7 +94,14 @@
     </div>
     <form method="dialog"><button type="submit" data-en="Close" data-es="Cerrar">Close</button></form>
   </div>
-  <div class="board-shell"><div id="replayBoard" class="board" role="group"></div></div>
+  <div class="board-shell">
+    <div class="replay-board-frame">
+      <div id="replayBoard" class="board" role="group"></div>
+      <svg id="replayArrow" class="replay-arrow" viewBox="0 0 8 8" aria-hidden="true" focusable="false" hidden>
+        <path id="replayArrowPath"></path>
+      </svg>
+    </div>
+  </div>
   <div class="replay-legend">
     <span class="replay-key source" data-en="Piece to watch" data-es="Pieza a mirar">Piece to watch</span>
     <span id="replayTargetLegend" class="replay-key target" data-en="Affected square or piece" data-es="Casilla o pieza afectada">Affected square or piece</span>
