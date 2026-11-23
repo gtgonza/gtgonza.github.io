@@ -1,10 +1,10 @@
 import {Chess} from './vendor/chess.js';
-import {BrowserEngine,puzzleLength} from './core.js?v=move-replay';
-import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=move-replay';
+import {BrowserEngine,puzzleLength} from './core.js?v=board-guide';
+import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=board-guide';
 import {PuzzleLibrary,latestGame} from './library.js';
 import {getLanguage,setLanguage} from './i18n.js';
 import {openBrowserDatabase} from './browser-db.js';
-import {replayLine,explainReplay,narrateReplayMove,missedOpportunity} from './learning.js?v=move-replay';
+import {replayLine,replayLessonLine,explainReplay,replayCoachStep,compareReplayLines} from './learning.js?v=board-guide';
 const $=id=>document.getElementById(id),t=(en,es)=>getLanguage()==='es'?es:en;
 const locale=()=>getLanguage()==='es'?'es-CL':'en-US';
 let browserStorage;try{browserStorage=localStorage;}catch{browserStorage={getItem:()=>null,setItem:()=>{throw Error('Storage unavailable');}};}
@@ -29,26 +29,40 @@ function dueLabel(p){return p.dueAt<=Date.now()?t('Due now','Pendiente ahora'):n
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function button(text,action,className=''){const b=element('button',text,className);b.type='button';b.onclick=action;return b;}
 function puzzleCount(count){return count+' '+(count===1?t('puzzle','puzle'):t('puzzles','puzles'));}
-function counterplay(played){
+function counterplay(played,buildLine=replayLine){
  if(!played?.uci||!(played.fen||played.beforeFen))return [];
  const pv=played.counterplay||played.after?.pv||[];
- return replayLine(played.fen||played.beforeFen,[played.uci,...pv]);
+ return buildLine(played.fen||played.beforeFen,[played.uci,...pv]);
 }
 function renderReplay(animate=false){
- const {index,fen,human,alternative,original,showingAlternative}=replay;
+ const {index,fen,human,alternative,original,showingAlternative,fullLine}=replay;
  const line=showingAlternative?alternative:original;
+ const visible=Math.min(line.length,fullLine?line.length:3);
  const move=line[index-1];
- drawBoard($('replayBoard'),move?.fen||fen,{
+ const board=$('replayBoard');
+ const coach=replayCoachStep(line,index,human,getLanguage());
+ drawBoard(board,move?.fen||fen,{
   flip:human==='b',motion:animate?move:null,lastMove:move,wrong:index===1&&!showingAlternative?move:null
  });
- const context=index===1&&!showingAlternative?missedOpportunity(original,alternative,human,getLanguage()):'';
- $('replayCaption').textContent=move
-  ?[narrateReplayMove(move,human,getLanguage()),context].filter(Boolean).join(' ')
-  :t('This is where it started. Press Next move to see what happens.','Así estaba el tablero antes de tu jugada. Pulsa Avanzar para ver qué pasó.');
- $('replayCount').textContent=index+' / '+line.length;
+ for(const square of board.children){
+  square.classList.toggle('coach-source',square.dataset.square===coach.source);
+  square.classList.toggle('coach-target',coach.targets.includes(square.dataset.square));
+ }
+ $('replayTargetLegend').hidden=!coach.targets.length;
+ $('replayFocus').textContent=coach.title;
+ $('replayCaption').textContent=coach.text;
+ $('replayCount').textContent=index+' / '+visible;
  $('replayPrevious').disabled=index===0;
- $('replayNext').disabled=index===line.length;
- $('replaySummary').textContent=line.length>1&&index===line.length&&!move?.mate?explainReplay(line,human,getLanguage()):'';
+ $('replayNext').disabled=index===visible;
+ $('replayMore').hidden=index!==visible||visible===line.length;
+ $('replayMore').textContent=line.at(-1)?.mate
+  ?t('Continue to checkmate','Seguir hasta el mate')
+  :t('Show more moves','Ver más jugadas');
+ const comparison=index?compareReplayLines(original,alternative,human,getLanguage()):'';
+ const outcome=!comparison&&index===visible&&index>1&&!move?.mate?explainReplay(line.slice(0,index),human,getLanguage()):'';
+ $('replayTakeaway').hidden=!(comparison||outcome);
+ $('replayTakeawayTitle').textContent=comparison?t('Why the alternative matters','Por qué importa la alternativa'):t('What happened so far','Qué pasó hasta aquí');
+ $('replaySummary').textContent=comparison||outcome;
  $('replayAlternative').hidden=!alternative.length;
  $('replayAlternative').textContent=showingAlternative?t('See my move','Volver a mi jugada'):t('Compare with an alternative','Comparar con una alternativa');
  $('replayTitle').textContent=showingAlternative?t('An alternative from the same position','Una alternativa desde la misma posición'):replay.title;
@@ -58,12 +72,12 @@ function stepReplay(delta){
  renderReplay(delta>0);
 }
 function showCounterplay(played,human,inGame){
- const line=counterplay(played);
+ const line=counterplay(played,replayLessonLine);
  if(line.length<2)return;
  const fen=played.fen||played.beforeFen;
- const alternative=inGame?replayLine(fen,played.before?.pv||[]):[];
+ const alternative=inGame?replayLessonLine(fen,played.before?.pv||[]):[];
  replay={
-  index:0,original:line,alternative:alternative[0]?.san===line[0].san?[]:alternative,showingAlternative:false,fen,human,
+  index:0,original:line,alternative:alternative[0]?.san===line[0].san?[]:alternative,showingAlternative:false,fullLine:false,fen,human,
   title:inGame?t('What went wrong in your game?','¿Qué pasó en tu partida?'):t('What did this move allow?','¿Qué permitió esta jugada?')
  };
  renderReplay();
@@ -435,8 +449,14 @@ $('practiceBack').onclick=$('doneBack').onclick=backToLesson;
 $('startGamePractice').onclick=startGamePractice;
 $('replayPrevious').onclick=()=>stepReplay(-1);
 $('replayNext').onclick=()=>stepReplay(1);
+$('replayMore').onclick=()=>{
+ replay.fullLine=true;
+ stepReplay(1);
+ $('replayNext').focus();
+};
 $('replayAlternative').onclick=()=>{
  replay.showingAlternative=!replay.showingAlternative;
+ replay.fullLine=false;
  replay.index=0;
  renderReplay();
  $('replayNext').focus();
