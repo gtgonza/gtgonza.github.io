@@ -1,6 +1,6 @@
 import {Chess} from './vendor/chess.js';
 import {BrowserEngine,puzzleLength} from './core.js';
-import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js';
+import {parseGame,ImportedAnalyzer,makePuzzles,PuzzleRunner,THEMES,HABITS} from './imports.js?v=guided-review';
 import {PuzzleLibrary,latestGame} from './library.js';
 import {getLanguage,setLanguage} from './i18n.js';
 import {openBrowserDatabase} from './browser-db.js';
