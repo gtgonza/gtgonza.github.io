@@ -13,6 +13,7 @@ try{const open=()=>openBrowserDatabase({legacyStorage:browserStorage});browserSt
 let library=new PuzzleLibrary({storage:browserStorage});
 const engine=new BrowserEngine(),analyzer=new ImportedAnalyzer(engine);
 let tab='import',selectedGameId=null,reviewMovePly=null,busy=false,analysisAbort=null;
+let importView='paste',guided=null,playerHeaders={};
 let runner=null,queue=[],used=new Set(),phase='challenge',selected=null,flipped=false,motion=null,previewFen=null,wrongMove=null,transitionTimer=null,extraPractice=false,finishedSet=false;
 let blindSession=false,sessionHabit=null,habitRevealed=false;
 const boardState=new WeakMap();
@@ -25,12 +26,74 @@ function resultLabel(g){const win=g.result===(g.human==='w'?'1-0':'0-1');return 
 function dueLabel(p){return p.dueAt<=Date.now()?t('Due now','Pendiente ahora'):new Date(p.dueAt).toLocaleString(locale(),{dateStyle:'medium',timeStyle:'short'});}
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function button(text,action,className=''){const b=element('button',text,className);b.type='button';b.onclick=action;return b;}
-function switchTab(value){tab=value;for(const name of ['import','bank','streak'])$(name+'Tab').hidden=name!==value;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===value));if(value==='bank'){renderBank();renderProgress();}if(value==='streak')renderStreak();}
+function puzzleCount(count){return count+' '+(count===1?t('puzzle','puzle'):t('puzzles','puzles'));}
+function renderNavigation(){
+ const current=guided&&tab==='streak'?'import':tab;
+ for(const b of document.querySelectorAll('[data-tab]')){
+  const active=b.dataset.tab===current;
+  b.classList.toggle('selected',active);
+  if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+ }
+ const step=tab==='streak'?2:importView==='lesson'?1:0;
+ $('reviewSteps').hidden=current!=='import';
+ for(const [i,item] of Array.from($('reviewSteps').children).entries()){
+  if(i===step)item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');
+  item.classList.toggle('complete',i<step||step===2&&finishedSet);
+ }
+}
+function switchTab(value){
+ tab=value;
+ for(const name of ['import','bank','streak'])$(name+'Tab').hidden=name!==value;
+ renderNavigation();
+ if(value==='bank'){renderBank();renderProgress();}
+ if(value==='streak')renderStreak();
+}
+function focusHeading(id){
+ const heading=$(id);
+ heading.focus({preventScroll:true});
+ heading.scrollIntoView({block:'nearest'});
+}
+function showImport(view){
+ importView=view;
+ switchTab('import');
+ renderReview();
+ focusHeading(view==='lesson'?'lessonTitle':'importTitle');
+}
+function importError(message='',field){
+ $('importError').textContent=message;
+ $('importError').hidden=!message;
+ for(const id of ['pgn','side','eloFallback']){
+  if(id===field)$(id).setAttribute('aria-invalid','true');else $(id).removeAttribute('aria-invalid');
+ }
+}
+function newGame(){
+ $('pgn').value='';$('pgnFile').value='';$('side').value='auto';$('eloFallback').value='';
+ $('gameOptions').open=false;$('gameLog').open=false;
+ $('analysisProgress').hidden=true;importError();notice(null);
+ formatPlayers();
+ showImport('paste');
+}
+function formatPlayers(headers={}){
+ playerHeaders=headers;
+ for(const [index,key,label] of [[1,'White',t('White','Blancas')],[2,'Black',t('Black','Negras')]]){
+  const name=headers[key];
+  $('side').options[index].textContent=name?label+' · '+name:label;
+ }
+}
+function gameHabit(game){
+ const patterns=new Map();
+ for(const move of game.moves){
+  if(move.color===game.human&&move.loss>=50&&move.pattern)patterns.set(move.pattern,(patterns.get(move.pattern)||0)+1);
+ }
+ return [...patterns].sort((a,b)=>b[1]-a[1])[0]?.[0]||'calculation';
+}
 function localize(){
  document.documentElement.lang=getLanguage();document.title='Between Bishops · '+t('Learn from your mistakes','Aprende de tus errores');
  for(const e of document.querySelectorAll('[data-en][data-es]'))e.textContent=e.dataset[getLanguage()];
  $('languageFlag').src='./flags/'+getLanguage()+'.svg';$('languageFlag').alt=getLanguage()==='en'?'English':'Español';$('languageCode').textContent=getLanguage().toUpperCase();$('language').title=t('Switch to Spanish','Cambiar a inglés');$('language').setAttribute('aria-label',$('language').title);$('helpLink').href=getLanguage()==='en'?'./README.md':'./LEEME.md';
  $('pgn').placeholder=t('[White "YourName"]\n[Black "Opponent"]\n\n1. e4 e5 2. Nf3 Nc6 ...','[White "TuUsuario"]\n[Black "Rival"]\n\n1. e4 e5 2. Nf3 Nc6 ...');
+ formatPlayers(playerHeaders);
+ $('reviewSteps').setAttribute('aria-label',t('Game review steps','Pasos de la revisión'));
  $('puzzleBoard').setAttribute('aria-label',t('Puzzle board','Tablero del puzle'));$('reviewBoard').setAttribute('aria-label',t('Original game review board','Tablero de revisión de la partida'));renderAll();
 }
 async function work(fn){
@@ -52,29 +115,54 @@ async function work(fn){
  }finally{
   busy=false;
   document.querySelectorAll('button,input,select,textarea').forEach(e=>e.disabled=false);
-  $('puzzleThinking').hidden=true;renderAll();
+  renderAll();
  }
 }
 function renderAll(){
  const latest=latestGame(library.games);$('currentElo').textContent=latest?library.currentElo:'—';$('eloSource').textContent=latest?ownName(latest)+' · '+gameDate(latest):t('From your latest game','Según tu última partida');
  $('gameTotal').textContent=library.games.length;$('gameTotal').nextElementSibling.textContent=library.games.length===1?t('game','partida'):t('games','partidas');$('puzzleTotal').textContent=library.puzzles.length;$('dueTotal').textContent=library.queue().length;$('bestStreak').textContent=library.data.streak.best;$('streakCount').textContent=library.data.streak.current;
- renderHistory();renderReview();renderBank();renderStreak();renderProgress();
+ renderNavigation();renderHistory();renderReview();renderBank();renderStreak();renderProgress();
 }
 function renderHistory(){
  const host=$('gameHistory');host.replaceChildren();if(!library.games.length){host.append(element('p',t('No games imported yet.','Aún no hay partidas importadas.'),'muted'));return;}
  for(const g of library.games.slice().reverse()){
-  const b=button(g.white+' · '+g.black,()=>{selectedGameId=g.id;reviewMovePly=null;if(!g.report){$('pgn').value=g.pgn;$('side').value=g.human;}switchTab('import');renderAll();},'history-button'+(selectedGameId===g.id?' active':''));
-  b.append(element('small',gameDate(g)+' · '+resultLabel(g)+' · Elo '+g.elo+' · '+library.puzzles.filter(p=>p.gameId===g.id).length+' '+t('puzzles','puzles')+(g.status==='partial'||g.status==='imported'?t(' · analysis pending',' · análisis pendiente'):'')));host.append(b);
+  const b=button(g.white+' · '+g.black,()=>{
+   selectedGameId=g.id;reviewMovePly=null;notice(null);importError();
+   $('gameLog').open=false;
+   if(!g.report){
+    $('pgn').value=g.pgn;$('side').value=g.human;$('eloFallback').value=g.elo;
+    formatPlayers(g.headers);$('analysisProgress').hidden=true;
+   }
+   showImport(g.report?'lesson':'paste');
+   renderHistory();
+  },'history-button'+(selectedGameId===g.id?' active':''));
+  b.append(element('small',gameDate(g)+' · '+resultLabel(g)+' · Elo '+g.elo+' · '+puzzleCount(library.puzzles.filter(p=>p.gameId===g.id).length)+(g.status==='partial'||g.status==='imported'?t(' · analysis pending',' · análisis pendiente'):'')));host.append(b);
  }
 }
 function renderReview(){
- const g=library.game(selectedGameId);$('reviewEmpty').hidden=!!g?.report;$('reviewPanel').hidden=!g?.report;if(!g?.report)return;
+ const g=library.game(selectedGameId),showLesson=importView==='lesson'&&!!g?.report;
+ $('reviewPanel').hidden=!showLesson;$('importPanel').hidden=showLesson;
+ $('backToLesson').hidden=!g?.report||busy;
+ if(!showLesson)return;
  $('gameMeta').textContent=gameDate(g)+' · '+resultLabel(g)+' · '+ownName(g)+' · Elo '+g.elo;$('gameTitle').textContent=g.white+' vs '+g.black;
  $('reviewStats').replaceChildren();for(const [key,label]of [['blunder',t('Blunders','Errores graves')],['mistake',t('Mistakes','Errores')],['inaccuracy',t('Inaccuracies / omissions','Imprecisiones / omisiones')]]){const box=element('div',label);box.prepend(element('strong',g.report.counts[key]));$('reviewStats').append(box);}
- const gamePatterns=Object.create(null);for(const m of g.moves.filter(m=>m.color===g.human&&m.loss>=50&&m.pattern))gamePatterns[m.pattern]=(gamePatterns[m.pattern]||0)+1;const priorities=Object.entries(gamePatterns).sort((a,b)=>b[1]-a[1]).slice(0,2);$('reviewSummary').textContent=g.report.texts[getLanguage()]+(priorities.length?'\n\n'+t('Habits to focus on','Hábitos en que enfocarte')+'\n'+priorities.map(([id,n])=>theme(id)+' ('+n+'): '+(HABITS[id]||HABITS.calculation)[getLanguage()]).join('\n\n'):'');const puzzles=library.puzzles.filter(p=>p.gameId===g.id);
- $('generationNote').textContent=(g.report.missing?t(g.report.missing+' moves could not be evaluated. Reimport to retry. ',g.report.missing+' jugadas no se pudieron evaluar. Importa otra vez para reintentar. '):'')+t(puzzles.length+' of up to 3 useful puzzles saved from this game. Existing puzzles keep their review history.',puzzles.length+' de hasta 3 puzles útiles guardados de esta partida. Los ya existentes conservan su historial.');
+ $('lessonHabit').hidden=!g.report.evaluated;
+ $('lessonHabitText').textContent=(HABITS[gameHabit(g)]||HABITS.calculation)[getLanguage()];
+ $('reviewSummary').textContent=g.report.texts[getLanguage()];
+ const puzzles=library.puzzles.filter(p=>p.gameId===g.id);
+ const issues=g.report.counts.blunder+g.report.counts.mistake+g.report.counts.inaccuracy;
+ $('reviewIntro').textContent=g.report.texts[getLanguage()].split('\n\n')[0];
+ $('generationNote').textContent=g.report.missing
+  ?t('Some moves could not be checked. You can paste this game again to finish the analysis.','Algunas jugadas quedaron sin evaluar. Puedes volver a pegar esta partida para completar el análisis.')
+  :puzzles.length?t('Put the lesson into practice with positions from this game.','Pon en práctica la lección con posiciones de esta partida.')
+  :issues?t('No clear position from this game was suitable for a puzzle.','Esta partida no dejó una posición clara para convertirla en puzle.'):t('No clear errors were found to turn into puzzles.','No se encontraron errores claros para convertirlos en puzles.');
+ const practiceButton=$('startGamePractice');
+ practiceButton.hidden=!puzzles.length;practiceButton.disabled=busy;
+ practiceButton.textContent=guided?.gameId===g.id&&!finishedSet&&runner
+  ?t('Resume practice','Continuar práctica')
+  :t('Practice '+puzzleCount(puzzles.length),'Practicar '+puzzleCount(puzzles.length));
+ $('newGame').classList.toggle('primary',!puzzles.length);
  const host=$('gamePuzzles');host.replaceChildren();for(const p of puzzles){const card=element('div',undefined,'puzzle-card');card.append(element('strong',theme(p.pattern)),element('p',t('Your move ','Tu jugada ')+Math.ceil(p.ply/2)+(g.human==='w'?'. ':'... ')+p.original.san+' · '+p.targetSteps+' '+t('of your moves','jugadas tuyas')+' · Elo '+p.elo),button(t('Retry this moment','Rehacer este momento'),()=>startSingle(p.id)));host.append(card);}
- if(!puzzles.length)host.append(element('p',t('No clear, recoverable mistakes were found to turn into puzzles. We do not invent errors to fill the set.','No se encontraron errores claros y recuperables para crear puzles. No inventamos errores para completar tres.'),'muted'));
  const moves=$('reviewMoves');moves.replaceChildren();for(const m of g.moves){const b=button(Math.ceil(m.ply/2)+(m.color==='w'?'. ':'... ')+m.san,()=>{reviewMovePly=m.ply;renderReview();},m.kind||'');moves.append(b);}
  const m=g.moves.find(m=>m.ply===reviewMovePly)||g.moves.find(m=>m.color===g.human&&m.loss>=50)||g.moves.at(-1);if(!m)return;
  drawBoard($('reviewBoard'),m.afterFen,{flip:g.human==='b'});
@@ -89,16 +177,41 @@ function renderBank(){
  for(const w of weaknesses){const row=element('div',undefined,'weakness-row');row.append(element('strong',theme(w.id)),element('p',w.count+' '+(w.count===1?t('moment in ','momento en '):t('moments in ','momentos en '))+w.games+' '+(w.games===1?t('game','partida'):t('games','partidas'))+' · '+w.failed+' '+(w.failed===1?t('failed puzzle attempt','fallo en puzles'):t('failed puzzle attempts','fallos en puzles'))),element('p',w.games>=2?t('Repeated across games.','Repetido entre partidas.'):t('Initial signal: only one game so far.','Señal inicial: solo una partida por ahora.')));row.append(element('p',w.clean+' '+(w.clean===1?t('clean review','repaso limpio'):t('clean reviews','repasos limpios'))+' · '+w.due+' '+(w.due===1?t('puzzle due','puzle pendiente'):t('puzzles due','puzles pendientes'))));patterns.append(row);}
 }
 async function importGame(){
- let parsed;try{parsed=parseGame($('pgn').value,{username:$('username').value,side:$('side').value,elo:$('eloFallback').value});}catch(e){notice(e.message);return;}
+ let parsed;
+ importError();notice(null);
+ try{
+  parsed=parseGame($('pgn').value,{username:$('username').value,side:$('side').value,elo:$('eloFallback').value});
+ }catch(e){
+  const field=e.field||'pgn';
+  if(e.field){formatPlayers(e.headers);$('gameOptions').open=true;}
+  const message=field==='side'?t('Which player are you? Choose your color, then analyze again.','¿Con qué color jugaste? Elígelo y vuelve a pulsar Analizar.')
+   :field==='eloFallback'?t('This game is missing your Elo. Enter it above, then analyze again.','Falta tu Elo en el PGN. Escríbelo arriba y vuelve a pulsar Analizar.')
+   :t('Paste the full PGN of one game, including the list of moves.','Pega el PGN completo de una sola partida, incluida la lista de jugadas.');
+  importError(message,field);$(field).focus();return;
+ }
+ formatPlayers(parsed.headers);
+ let ready=false;
  analysisAbort=new AbortController();notice(null);await work(async()=>{
-  library.setUsername($('username').value);const existing=library.game(parsed.id);let pending=existing?structuredClone(existing):parsed;selectedGameId=pending.id;reviewMovePly=null;
-  if(existing?.status==='analyzed'){library.addPuzzles(makePuzzles(existing,{weaknesses:library.weaknesses()}));notice(t('This game is already analyzed. Its puzzles and review history were reused.','Esta partida ya está analizada. Se reutilizaron sus puzles e historial.'));return;}
-  pending.status='partial';library.addGame(pending);$('analysisProgress').hidden=false;$('analysisBar').value=0;$('analysisPercent').textContent='0%';$('analysisText').textContent=t('Loading Stockfish…','Cargando Stockfish…');
+  const playerName=parsed.headers[parsed.human==='w'?'White':'Black'];
+  if(playerName&&playerName!=='?')$('username').value=playerName;
+  library.setUsername($('username').value);
+  const existing=library.game(parsed.id);
+  const pending=existing?structuredClone(existing):parsed;selectedGameId=pending.id;reviewMovePly=null;
+  if(existing?.status==='analyzed'){library.addPuzzles(makePuzzles(existing,{weaknesses:library.weaknesses()}));ready=true;return;}
+  pending.status='partial';library.addGame(pending);$('gameOptions').open=false;$('analysisProgress').hidden=false;$('analysisBar').value=0;$('analysisPercent').textContent='0%';$('analysisText').textContent=t('Getting the board ready…','Preparando el tablero…');
+  $('importPanel').classList.add('is-analyzing');
+  $('importTitle').textContent=t('Analyzing your game','Analizando tu partida');
+  focusHeading('importTitle');
+  $('detectedPlayer').textContent=ownName(parsed)+' · '+(parsed.human==='w'?t('White','Blancas'):t('Black','Negras'))+' · Elo '+parsed.elo;
+  $('analysisProgress').scrollIntoView({block:'nearest'});
   const result=await analyzer.analyze(pending,{signal:analysisAbort.signal,onProgress:({done,total,percent,move})=>{
    Object.assign(pending.moves[move.ply-1],structuredClone(move));$('analysisBar').value=percent;$('analysisPercent').textContent=percent+'%';$('analysisText').textContent=t('Analyzing your move ','Analizando tu jugada ')+Math.ceil(move.ply/2)+' · '+done+'/'+total;library.addGame(pending);
   }});
-  library.addGame(result);$('analysisText').textContent=t('Analysis complete','Análisis completado');const added=library.addPuzzles(makePuzzles(result,{weaknesses:library.weaknesses()}));notice(t('Game saved. '+added+' new puzzles added to your bank.','Partida guardada. '+added+' puzles nuevos añadidos al banco.'));
- });analysisAbort=null;$('cancelAnalysis').disabled=true;
+  library.addGame(result);library.addPuzzles(makePuzzles(result,{weaknesses:library.weaknesses()}));ready=true;
+ });analysisAbort=null;$('analysisProgress').hidden=true;$('cancelAnalysis').disabled=true;
+ $('importPanel').classList.remove('is-analyzing');
+ $('importTitle').textContent=$('importTitle').dataset[getLanguage()];
+ if(ready&&!$('notice').textContent){$('gameLog').open=false;showImport('lesson');}
 }
 function renderProgress(){
  const host=$('trainingProgress'),pattern=$('patternFilter').value;
@@ -118,21 +231,56 @@ function renderProgress(){
 }
 function activeFen(){if(!runner)return new Chess().fen();if(phase==='prelude')return runner.puzzle.beforeOpponentFen||runner.puzzle.fen;if(phase==='checking')return previewFen||runner.fen;if(phase==='feedback'||phase==='wrong')return runner.answer?.afterFen||runner.fen;return runner.fen;}
 function renderStreak(){
+ const guidedGame=guided&&library.game(guided.gameId);
+ const guidedDone=guidedGame&&finishedSet&&!runner;
+ $('streakHeader').hidden=!!guidedGame;
+ $('gamePracticeHeader').hidden=!guidedGame||guidedDone;
+ $('gamePracticeDone').hidden=!guidedDone;
+ if(guidedGame){
+  $('gamePracticeTitle').textContent=t('Puzzle ','Puzle ')+used.size+t(' of ',' de ')+guided.total;
+  $('gamePracticeSource').textContent=guidedGame.white+' vs '+guidedGame.black;
+  $('gamePracticeRecap').textContent=t(
+   'You solved '+puzzleCount(guided.total)+' from your game. Find future reviews in Daily practice.',
+   'Resolviste '+puzzleCount(guided.total)+' de tu partida. Encontrarás los próximos repasos en Práctica diaria.'
+  );
+  $('gamePracticeHabit').textContent=(HABITS[gameHabit(guidedGame)]||HABITS.calculation)[getLanguage()];
+ }
  $('queueInfo').textContent=t('Uses your latest game Elo (','Usa el Elo de tu última partida (')+library.currentElo+t('), repeated patterns and scheduled reviews.', '), los patrones repetidos y los repasos pendientes.');$('streakCount').textContent=library.data.streak.current;
- const showHabit=sessionHabit&&(habitRevealed||finishedSet);
+ const showHabit=!guidedGame&&sessionHabit&&(habitRevealed||finishedSet);
  $('sessionHabit').hidden=!showHabit;
  $('habitText').textContent=showHabit?(HABITS[sessionHabit]||HABITS.calculation)[getLanguage()]:'';
- $('streakWorkspace').hidden=!runner;$('streakEmpty').hidden=!!runner;
- if(!runner){const due=library.queue().length;$('streakEmptyTitle').textContent=finishedSet?t('Set complete','Serie terminada'):due?t('Your next review is ready','Tu próximo repaso está listo'):t('You are up to date','Estás al día');$('streakEmptyText').textContent=library.puzzles.length?t(due+' puzzles are due at your current level.','Hay '+due+' puzles pendientes para tu nivel actual.'):t('Import a game to create your first personal puzzles.','Importa una partida para crear tus primeros puzles personales.');$('startStreak').disabled=busy||!due;$('practiceAhead').disabled=busy||!library.puzzles.length;return;}
+ $('streakWorkspace').hidden=!runner;$('streakEmpty').hidden=!!runner||!!guidedGame;
+ if(!runner){
+  const due=library.queue().length;
+  $('streakEmptyTitle').textContent=finishedSet?t('Set complete','Serie terminada'):!library.puzzles.length?t('Create your first puzzles','Crea tus primeros puzles'):due?t('Your next review is ready','Tu próximo repaso está listo'):t('You are up to date','Estás al día');
+  $('streakEmptyText').textContent=library.puzzles.length?t(puzzleCount(due)+' ready to review.',puzzleCount(due)+' para repasar.'):t('Paste a game to get puzzles based on your own moves.','Pega una partida para recibir puzles de tus propias jugadas.');
+  $('startStreak').hidden=!due;$('startStreak').disabled=busy;
+  $('practiceAhead').hidden=!library.puzzles.length;
+  $('practiceAhead').className=due?'quiet':'primary compact';
+  $('practiceAhead').disabled=busy;
+  $('practiceImport').hidden=!!library.puzzles.length;
+  return;
+ }
  const p=runner.puzzle,g=library.game(p.gameId);$('puzzleContext').textContent=gameDate(g)+' · '+t('From your move ','De tu jugada ')+Math.ceil(p.ply/2)+' · Elo '+p.elo;
  const showTheme=!blindSession||runner.attempts.length>0;
  $('puzzleTheme').hidden=!showTheme;
+ $('puzzleSource').hidden=!!guidedGame;
  $('puzzleTheme').textContent=showTheme?theme(p.pattern):'';$('puzzleTitle').textContent=runner.done?t('Puzzle complete','Puzle completado'):t('What would you play?','¿Qué jugarías?');$('puzzleSource').textContent=g.white+' vs '+g.black+' · '+t('You play ','Juegas con ')+(p.human==='w'?t('White','blancas'):t('Black','negras'));
- $('puzzleProgress').textContent=runner.step+'/'+p.targetSteps+' '+t('of your moves solved','jugadas tuyas resueltas')+(extraPractice?t(' · Extra practice',' · Práctica extra'):'');
- $('puzzlePrompt').textContent=phase==='prelude'?t('Watch the opponent move…','Observa la jugada del rival…'):runner.done?t('Solved. Read the explanation, then continue.','Resuelto. Lee la explicación y continúa.'):phase==='wrong'?t('Not this move. The position will reset.','Esa jugada no. Volvemos al paso pendiente.'):phase==='feedback'?t('Good move. Your opponent replies…','Buena jugada. El rival responde…'):t('Find move ','Encuentra la jugada ')+(runner.step+1)+'/'+p.targetSteps;
+ $('puzzleSource').textContent+=extraPractice?t(' · Extra practice',' · Práctica extra'):'';
+ const side=p.human==='w'?t('White','Blancas'):t('Black','Negras');
+ $('puzzlePrompt').textContent=phase==='prelude'?t('Watch the opponent move…','Observa la jugada del rival…')
+  :phase==='checking'?t('Checking your move…','Comprobando tu jugada…')
+  :runner.done?t('Solved. Read the explanation, then continue.','Resuelto. Lee la explicación y continúa.')
+  :phase==='wrong'?t('Try again after the board resets.','Vuelve a intentarlo cuando se restablezca el tablero.')
+  :phase==='feedback'?t('Good move. Your opponent replies…','Buena jugada. El rival responde…')
+  :side+t(' to move · ',' juegan · ')+t('Move ','Jugada ')+(runner.step+1)+'/'+p.targetSteps;
  $('puzzleFeedback').textContent=runner.answer?runner.answer.feedbackTexts[getLanguage()]:'';$('puzzleFeedback').className='prose'+(runner.answer?(runner.answer.good?' feedback-good':' feedback-bad'):'');
  const record=library.puzzle(p.id);$('puzzleSchedule').textContent=runner.done?(runner.failed||runner.assisted?t('Saved as retried or assisted. Next review: ','Guardado con reintentos o ayuda. Próximo repaso: '):t('Clean solution. Next review: ','Solución limpia. Próximo repaso: '))+dueLabel(record):t('Hints and wrong attempts stay in your record.','Las pistas y los fallos quedan en tu registro.');
- $('hint').disabled=busy||runner.done||phase!=='challenge';$('restartPuzzle').disabled=busy;$('nextPuzzle').disabled=busy||!runner.done;$('puzzleThinking').hidden=!busy||phase!=='checking';
+ $('hint').disabled=busy||phase!=='challenge';$('restartPuzzle').disabled=busy;
+ $('hint').hidden=runner.done;$('restartPuzzle').hidden=runner.done;
+ $('puzzleTools').hidden=runner.done;
+ $('nextPuzzle').hidden=!runner.done;$('nextPuzzle').disabled=busy;
+ $('nextPuzzle').textContent=queue.length?t('Next puzzle','Siguiente puzle'):guidedGame?t('Finish practice','Terminar práctica'):t('Finish set','Terminar serie');
  drawBoard($('puzzleBoard'),activeFen(),{flip:flipped,interactive:!busy&&!runner.done&&phase==='challenge',selected,hint:runner.hintSquare,wrong:wrongMove,motion});motion=null;
 }
 function activatePuzzle(id){
@@ -143,6 +291,7 @@ function activatePuzzle(id){
 }
 function startQueue(ahead=false){
  return work(()=>{
+  guided=null;
   const ranked=library.queue({ahead});
   sessionHabit=ranked[0]?.pattern||null;
   const nextSet=[];
@@ -158,21 +307,47 @@ function startQueue(ahead=false){
   if(queue.length)activatePuzzle(queue.shift());
  });
 }
+async function startGamePractice(){
+ const game=library.game(selectedGameId);
+ if(!game?.report)return;
+ if(guided?.gameId===game.id&&runner&&!finishedSet){
+  switchTab('streak');focusHeading('gamePracticeTitle');return;
+ }
+ await work(()=>{
+  const puzzles=library.puzzles.filter(p=>p.gameId===game.id);
+  if(!puzzles.length)return;
+  guided={gameId:game.id,total:puzzles.length};
+  queue=puzzles.map(p=>p.id);used=new Set();finishedSet=false;extraPractice=false;
+  blindSession=true;sessionHabit=null;habitRevealed=false;
+  library.data.streak.current=0;library.save();
+  activatePuzzle(queue.shift());switchTab('streak');
+ });
+ if(tab==='streak'&&guided?.gameId===game.id)focusHeading('gamePracticeTitle');
+}
+function backToLesson(){
+ if(guided)selectedGameId=guided.gameId;
+ showImport('lesson');
+}
+function openDailyPractice(){
+ if(guided){clearTimeout(transitionTimer);guided=null;runner=null;queue=[];finishedSet=false;}
+ switchTab('streak');
+}
 function startSingle(id){
  return work(()=>{
   const puzzle=library.puzzle(id);if(!puzzle)return;
-  queue=[];used=new Set();finishedSet=false;extraPractice=puzzle.dueAt>Date.now();
+  guided=null;queue=[];used=new Set();finishedSet=false;extraPractice=puzzle.dueAt>Date.now();
   blindSession=false;sessionHabit=puzzle.pattern;habitRevealed=false;
   library.data.streak.current=0;library.save();switchTab('streak');activatePuzzle(id);
   $('streakTab').scrollIntoView({behavior:'smooth',block:'start'});
  });
 }
-function nextPuzzle(){
+async function nextPuzzle(){
  if(busy||!runner?.done)return;
- return work(()=>{
+ await work(()=>{
   const next=queue.find(id=>!used.has(id));queue=queue.filter(id=>id!==next);
   if(next)activatePuzzle(next);else{runner=null;finishedSet=true;}
  });
+ if(guided)focusHeading(runner?'gamePracticeTitle':'gamePracticeDoneTitle');
 }
 function drawBoard(host,fen,{flip=false,interactive=false,selected=null,hint=null,wrong=null,motion=null}={}){
  const c=new Chess(fen),pieces=Object.fromEntries(c.board().flat().filter(Boolean).map(p=>[p.square,p])),legal=interactive?c.moves({verbose:true}):[];
@@ -200,12 +375,25 @@ async function squareClick(square){
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);}
 $('importGame').onclick=importGame;$('cancelAnalysis').onclick=()=>analysisAbort?.abort();
-$('language').onclick=()=>{if(busy)return;setLanguage(getLanguage()==='en'?'es':'en');localize();};document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
-$('pgnFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;if(file.size>250000){notice(t('PGN file exceeds 250 KB.','El archivo supera 250 KB.'));return;}$('pgn').value=await file.text();};
+$('newGame').onclick=$('practiceNewGame').onclick=$('practiceImport').onclick=newGame;
+$('backToLesson').onclick=()=>showImport('lesson');
+$('practiceBack').onclick=$('doneBack').onclick=backToLesson;
+$('startGamePractice').onclick=startGamePractice;
+$('language').onclick=()=>{if(busy)return;setLanguage(getLanguage()==='en'?'es':'en');importError();localize();};
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.tab==='streak')openDailyPractice();else switchTab(b.dataset.tab);});
+$('pgn').oninput=()=>{importError();formatPlayers();};
+$('side').onchange=$('eloFallback').oninput=$('username').oninput=()=>importError();
+$('pgnFile').onchange=async e=>{
+ const file=e.target.files[0];if(!file)return;
+ if(file.size>250000){importError(t('PGN file exceeds 250 KB.','El archivo supera 250 KB.'));return;}
+ try{$('pgn').value=await file.text();importError();formatPlayers();}
+ catch{importError(t('Could not read this file. Try pasting its PGN.','No se pudo leer el archivo. Prueba pegar su PGN.'));}
+};
 $('patternFilter').onchange=()=>{renderBank();renderProgress();};$('eloFilter').onchange=renderBank;$('bankStreak').onclick=()=>startQueue(false);$('startStreak').onclick=()=>startQueue(false);$('practiceAhead').onclick=()=>startQueue(true);$('nextPuzzle').onclick=nextPuzzle;$('flip').onclick=()=>{flipped=!flipped;renderStreak();};
 $('hint').onclick=()=>work(async()=>{await runner.hint();library.recordHint(runner.puzzle.id,runner.id,runner.step+1);renderStreak();});
 $('restartPuzzle').onclick=()=>{clearTimeout(transitionTimer);if(runner.done)runner=new PuzzleRunner(runner.puzzle,engine);else runner.restart();selected=null;wrongMove=null;phase='challenge';renderStreak();};
 $('exportData').onclick=()=>{download('between-bishops-backup-'+new Date().toISOString().slice(0,10)+'.json',library.export(),'application/json');};
 $('restoreData').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000000)throw Error(t('Backup is too large.','El respaldo es demasiado grande.'));const backup=await file.text();await work(()=>{library.restore(backup);notice(t('Backup merged without duplicating games or attempts.','Respaldo integrado sin duplicar partidas ni intentos.'));});}catch(error){notice(error.message);}finally{e.target.value='';}};
 window.addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
-localize();if(databaseNotice)notice(databaseNotice);if(library.loadError)notice(library.loadError);if(library.games.length){selectedGameId=library.games.at(-1).id;renderReview();}
+selectedGameId=library.games.findLast(game=>game.report)?.id||null;
+localize();if(databaseNotice)notice(databaseNotice);if(library.loadError)notice(library.loadError);
