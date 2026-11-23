@@ -21,13 +21,13 @@ export class BrowserEngine {
     this.failure=e=>{clear();this.worker?.terminate();this.worker=null;reject(e);};
     this.listener=line=>{info?.(line);if(line.startsWith(marker)){clear();resolve(line);}};start();
   });}
-  evaluate(fen,{ms=800,multipv=1,history=''}={}){
+  evaluate(fen,{ms=800,multipv=1,history='',initialFen=''}={}){
     const task=this.queue.then(async()=>{
       const c=new Chess(fen);
       if(c.isCheckmate())return {cp:-100000,mate:0,pv:[],best:null,depth:0,candidates:[]};
       if(c.isGameOver())return {cp:0,mate:null,pv:[],best:null,depth:0,candidates:[]};
       await this.init();this.send('setoption name MultiPV value '+multipv);this.send('setoption name Skill Level value 20');
-      this.send(history?'position startpos moves '+history:'position fen '+fen);
+      this.send(history?(initialFen?'position fen '+initialFen:'position startpos')+' moves '+history:'position fen '+fen);
       const candidates={};let main={cp:0,mate:null,pv:[],depth:0};
       const best=await this.wait('bestmove',()=>this.send('go movetime '+ms),line=>{
         const score=line.match(/score (cp|mate) (-?\d+)/),pv=line.match(/ pv (.+)/);
@@ -47,6 +47,7 @@ export function puzzleLength(fen,pv=[]){
   return Math.max(1,Math.min(4,steps));
 }
 export function classify(before,after,uci,best){
+  if(before.cp>90000&&after.cp<-90000)return {loss:0,label:'Buena jugada',kind:'good'};
   const loss=uci===best?0:Math.max(0,before.cp+after.cp);
   if(before.cp < -90000 && after.cp >90000)return {loss:0,label:'Posición perdida',kind:'neutral'};
   return {loss,...(loss>=200?{label:'Error grave',kind:'blunder'}:loss>=100?{label:'Error',kind:'mistake'}:loss>=50?{label:'Imprecisión',kind:'inaccuracy'}:{label:uci===best?'Mejor jugada':'Buena jugada',kind:'good'})};

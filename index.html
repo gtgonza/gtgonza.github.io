@@ -47,7 +47,6 @@
   .role .dot{color:var(--hair-strong);margin:0 .5em}
   .sig{font-family:"Instrument Serif",serif;font-style:italic;font-size:1rem;color:var(--soft);text-align:center;line-height:1.4}
   .sig cite{display:block;font-family:"IBM Plex Mono",monospace;font-style:normal;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--hair-strong);margin-top:.35rem}
-  .hero-aside{margin-top:1.1rem;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--hair-strong)}
 
   .portrait{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:var(--r);background:var(--frame)}
   .portrait img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;filter:grayscale(.12) contrast(1.02)}
@@ -68,18 +67,6 @@
   .tags{display:flex;flex-wrap:wrap;gap:.45rem}
   .tags span{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.06em;color:#2c2a23;border:1px solid var(--hair-strong);border-radius:999px;padding:.28rem .7rem;text-transform:lowercase}
 
-  /* gallery */
-  .gallery-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:clamp(2.2rem,4vw,3.2rem) 0 clamp(1.4rem,3vw,2rem)}
-  .gallery-title{font-family:"Instrument Serif",serif;font-weight:400;font-size:clamp(1.7rem,4vw,2.5rem);line-height:1;letter-spacing:-.01em}
-  .gallery-title em{font-style:italic}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.5rem,1.2vw,.9rem);padding-bottom:clamp(3rem,6vw,5rem)}
-  .cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:var(--r);background:var(--frame);cursor:pointer;border:none;padding:0;width:100%}
-  .cell img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.04) contrast(1.02);transition:transform .7s cubic-bezier(.2,.7,.2,1),filter .5s ease}
-  .cell .num{position:absolute;top:9px;left:11px;font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.14em;color:#fff;mix-blend-mode:difference;opacity:.85;z-index:2}
-  .cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.22));opacity:0;transition:opacity .4s ease}
-  .cell:hover::after,.cell:focus-visible::after{opacity:1}
-  .cell:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-
   /* footer */
   .colophon{display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;padding:clamp(2.2rem,5vw,3.4rem) 0 clamp(2.6rem,6vw,4rem);border-top:1px solid var(--hair)}
   .who{display:flex;align-items:center;gap:1.1rem}
@@ -90,29 +77,15 @@
   .clock .pulse{width:6px;height:6px;border-radius:50%;background:var(--ink);animation:pulse 2.4s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
 
-  /* lightbox */
-  .lb{position:fixed;inset:0;z-index:50;background:rgba(20,19,15,.94);display:none;align-items:center;justify-content:center;padding:clamp(1rem,4vw,3rem)}
-  .lb.open{display:flex}
-  .lb img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:var(--r)}
-  .lb-close,.lb-nav{position:absolute;background:none;border:none;color:#EFEEEA;cursor:pointer;font-family:"IBM Plex Mono",monospace;letter-spacing:.1em}
-  .lb-close{top:clamp(1rem,3vw,2rem);right:clamp(1rem,3vw,2rem);font-size:.78rem;text-transform:uppercase}
-  .lb-nav{top:50%;transform:translateY(-50%);font-size:1.6rem;padding:.6rem;opacity:.7;transition:opacity .2s}
-  .lb-nav:hover{opacity:1}
-  .lb-prev{left:clamp(.5rem,2vw,1.5rem)}
-  .lb-next{right:clamp(.5rem,2vw,1.5rem)}
-  .lb-meta{position:absolute;bottom:clamp(1rem,3vw,2rem);left:0;right:0;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.2em;color:#9a968c;text-transform:uppercase}
-
   @media (prefers-reduced-motion:no-preference){
     .reveal{opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
     .reveal.in{opacity:1;transform:none}
-    .cell:hover img{transform:scale(1.045)}
   }
 
   @media (max-width:860px){
     .hero{grid-template-columns:1fr;gap:2.2rem;padding-top:2rem}
     .portrait{aspect-ratio:4/5;max-height:60vh;max-width:360px}
     .profile{grid-template-columns:1fr;gap:2.4rem}
-    .grid{grid-template-columns:repeat(2,1fr)}
     .nav{gap:1.1rem}
   }
   @media (max-width:480px){
@@ -143,7 +116,6 @@
       <div class="hero-eyebrow label">Santiago, Chile</div>
       <h1 class="name">Gonzalo<em>González Melo</em></h1>
       <div class="role">Applied&nbsp;Economist<span class="dot">/</span>QA&nbsp;Consultores</div>
-      <div class="hero-aside">Off the clock — an analog photographer</div>
     </div>
     <figure class="portrait reveal">
       <img src="foto_gg.png" alt="Gonzalo González Melo">
@@ -189,15 +161,6 @@
     </div>
   </section>
 
-  <div class="rule"></div>
-
-  <div class="gallery-head">
-    <h2 class="gallery-title">On <em>film</em></h2>
-    <span class="label">Analog photography · Santiago</span>
-  </div>
-
-  <div class="grid" id="grid"></div>
-
   <footer class="colophon">
     <div class="who">
       <img src="foto_gg.png" alt="Gonzalo González Melo">
@@ -212,40 +175,7 @@
 
 </div>
 
-<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photograph viewer">
-  <button class="lb-close" id="lbClose" aria-label="Close">Close ✕</button>
-  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous">‹</button>
-  <img id="lbImg" src="" alt="">
-  <button class="lb-nav lb-next" id="lbNext" aria-label="Next">›</button>
-  <div class="lb-meta" id="lbMeta"></div>
-</div>
-
 <script>
-  const photos = [
-    "https://i.imgur.com/lOMdABx.jpg","https://i.imgur.com/4cREDRw.jpg","https://i.imgur.com/LR5Mhka.jpg",
-    "https://i.imgur.com/fiYKiVk.jpg","https://i.imgur.com/LEjIQkU.jpg","https://i.imgur.com/iZZBrV7.jpg",
-    "https://i.imgur.com/9atX6WF.jpg","https://i.imgur.com/ruqrASr.jpg","https://i.imgur.com/46Kbz4M.jpg"
-  ];
-  const grid=document.getElementById('grid');
-  photos.forEach((src,i)=>{
-    const b=document.createElement('button');
-    b.className='cell reveal';
-    b.setAttribute('aria-label','Open photograph '+(i+1));
-    b.innerHTML='<span class="num">'+String(i+1).padStart(2,'0')+'</span><img src="'+src+'" alt="Analog photograph '+(i+1)+'" loading="lazy">';
-    b.addEventListener('click',()=>openLb(i));
-    grid.appendChild(b);
-  });
-  const lb=document.getElementById('lb'),lbImg=document.getElementById('lbImg'),lbMeta=document.getElementById('lbMeta');
-  let cur=0;
-  function openLb(i){cur=i;render();lb.classList.add('open');document.body.style.overflow='hidden';}
-  function closeLb(){lb.classList.remove('open');document.body.style.overflow='';}
-  function render(){lbImg.src=photos[cur];lbMeta.textContent='Frame '+String(cur+1).padStart(2,'0')+' / '+String(photos.length).padStart(2,'0')+' · 35mm';}
-  function step(d){cur=(cur+d+photos.length)%photos.length;render();}
-  document.getElementById('lbClose').onclick=closeLb;
-  document.getElementById('lbPrev').onclick=()=>step(-1);
-  document.getElementById('lbNext').onclick=()=>step(1);
-  lb.addEventListener('click',e=>{if(e.target===lb)closeLb();});
-  document.addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);});
   const clockEl=document.getElementById('clock');
   function tick(){const t=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());clockEl.textContent='Santiago · '+t;}
   tick();setInterval(tick,1000);

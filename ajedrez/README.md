@@ -1,48 +1,39 @@
-# Between Bishops · Learn from your mistakes
+# Between Bishops · Imported-game trainer (draft)
 
 [Español](LEEME.md)
 
-A chess opponent and trainer built around your own mistakes. This static HTML, CSS, JavaScript and WebAssembly app runs on GitHub Pages without an application server.
+Paste one PGN from Chess.com, Lichess or another chess app. Enter your exact player name or choose your color. The app reads your game date, result and your own Elo, then analyzes only your moves with the local Stockfish engine. No account, generative model or paid API is required.
 
-## Play, review, solve
+## The learning loop
 
-Every new game starts from the standard initial position. Your color is random. Both sides have ten minutes with no increment and no takebacks. The opponent's clock includes engine calculation, the hidden review of your last move and API waiting time. Closing or refreshing the page loses the active game.
+1. **Import and review.** Your PGN and its metadata enter the game log. The engine evaluates the positions before and after each of your moves, with visible progress and cancellation. Completed calculations are saved, so reimporting a partial game resumes the missing work. Importing an already analyzed game reuses its record.
+2. **Keep up to three useful moments.** Blunders, ordinary mistakes and missed opportunities can become puzzles. PGN annotations such as `$2`, `$4` or `$9` are ignored as verdicts: the app uses its own engine search. Positions already heavily lost are not selected. Repeated patterns are prioritized, with variety between categories. Large numerical changes in already winning positions are downweighted. If there are fewer than three useful errors, fewer puzzles are saved. An unchanged game never expands past three or resets its existing review history.
+3. **Grow the bank.** Each puzzle retains its game, date, original position and move number, error type, source game Elo, attempts, hint use and review dates. The source game Elo is contextual information, not a calibrated puzzle rating.
+4. **Train your personal streak.** Due puzzles and recurring weaknesses are prioritized at your current level. Current Elo comes from the most recent game by PGN date; importing an older game does not replace it. Unknown dates use import time. Puzzles from games over 400 Elo above the current reference are left out of the automatic queue but remain accessible in the bank.
+5. **Review again later.** Clean completions when due schedule intervals of 1, 3, 7, 14, 30 and 60 days. Wrong attempts and hints reset the stage and bring the puzzle back after ten minutes. A later correct answer never deletes earlier failures. Extra practice before a review is due does not advance its schedule or add streak points.
 
-**Thinking…** appears in a clear neutral banner above the board. Pieces animate between squares, including the rook when castling. Reduced-motion preferences are respected.
+## Puzzles and patterns
 
-Stockfish analyzes your moves while the opponent thinks. Results stay hidden during play. When the game ends, choose **Review game** or **Play again**. No written self-assessment is required. The review reuses saved analysis and shows real processing stages up to 100%; missing analyses are retried if necessary. A generative explanation may still require an API wait.
+Puzzles start from a real decision in your imported game. The preceding opponent move is animated when available. The player solves up to two own moves below Elo 600, three below 1100 and four above, depending on the engine variation available. Opponent replies are calculated between steps. Sound alternatives within half a pawn of the best engine option are accepted. A forced winning mate is not penalized merely for taking a different number of moves.
 
-The review counts blunders, mistakes and inaccuracies, explains what to look for next time and selects up to three moments for puzzles. The first detected error is included. These labels use short engine searches and are approximate: inaccuracies start at 50 centipawns, mistakes at 100 and blunders at 200.
+A wrong move briefly colors its squares soft red and returns to the pending position. **Restart** does not erase the current run's earlier errors or hint use. **Hint** colors only the recommended piece blue. Successful completion does not change the original PGN. The bank displays a dated attempt/review log, with the most recent twelve events visible and the complete history retained in backups.
 
-Each puzzle tells you how many of your moves to solve, from one to four depending on the available legal variation. The preceding opponent move is shown first when one exists. Sound alternatives within half a pawn of the best engine option are accepted; the opponent replies between steps. A wrong move briefly colors its origin and destination soft red and returns to the pending step. **Restart puzzle** returns to the beginning without deleting attempts. **Hint** highlights the recommended piece in blue without revealing its destination. Attempts using a hint are marked. Completing a puzzle never erases earlier failures or changes the original game.
+Pattern summaries include all evaluated errors, not just the three selected puzzles. Categories include king safety, exposed material, missed captures, calculation, mating chances, double attacks, opening decisions and forcing moves. Labels are rule-based, provisional interpretations of verified engine lines. One game is an initial signal; recurrence across multiple games is shown separately. This is not a scientifically calibrated diagnosis or Elo estimator.
 
-## Opponents and adaptive learning
+The default search is about 850 ms per position; puzzle validation uses about 1300 ms per position. Labels and even counts can change with search depth. Inaccuracy starts at a 50-centipawn loss, mistake at 100 and blunder at 200. These are practical training thresholds. An import of 26 own moves may take roughly a minute depending on the device.
 
-- **Generative AI (uses tokens):** OpenAI, Gemini or Claude chooses among engine-verified candidates. The app does not accept arbitrary or illegal model moves.
-- **No GPT connection (free):** the local Stockfish engine plays and analyzes without a paid API. Files still need to load before the app starts.
+In a streak, the theme appears after the first attempt. A session mixes themes when possible and suggests one habit for the next game. The progress panel separates first encounters with the theme hidden from scheduled reviews. It compares up to five recent games with up to five earlier games by the same player and TimeControl. Puzzle length starts from source Elo guidance and can adjust by one step based on recent unassisted performance.
 
-Choose a reference Elo or request a rough estimate after playing. At least eight evaluated moves of yours are required for an estimate. This experimental practice index is not calibrated to official, Chess.com or Lichess Elo. Opponent candidates are kept within the existing evaluation tolerance; deliberate gifts are not added.
+## Your data
 
-Reviewed errors build a browser-local profile of approximate patterns: king safety, exposed pieces, finding captures and calculating replies. A new opponent game can prioritize a pattern due for review among already-filtered sound candidates. The generative opponent receives the goal and verified signals; the local opponent uses rules. A useful opportunity is not guaranteed to occur.
+The bank is stored in this browser's IndexedDB, with a localStorage fallback if IndexedDB is unavailable. Earlier prototype storage keys are preserved. Export JSON backups to keep or transfer games, puzzles, attempt logs and schedules. Restoring merges records without duplicating games or attempt IDs. This version has no cloud synchronization or account. Clearing browser/site data removes its local database. Current limits are 500 games, 1500 puzzles and a 100 MB backup import.
 
-Only concrete, observed opportunities are scored after a game. Two good responses without new errors of that pattern can space the next review by 1, 3, 7, 14, 30 or 60 days. A failure prioritizes it again after ten minutes. No improvement is credited without enough opportunities or merely for winning. Puzzle attempts are tracked separately. These indicators and intervals are experimental and need calibration.
+The English/Spanish flag button saves your language preference. No PGN data is sent to an external API. Source and assets still need to load before the app can run.
 
-## Language, data and API costs
+## Running and publication
 
-English is the initial language. Click the flag button (**EN / ES**) in the header to switch between English and Spanish. The preference is saved in this browser. Local reviews and puzzle feedback are available in both languages. AI explanations are requested in the selected language. Switching languages does not make a paid request: if a generated review exists only in the other language, the local engine review is shown instead.
+Run `node preview-pages.cjs` from the project and open `http://127.0.0.1:8766/ajedrez/`. The app's public homepage link has been removed and its published entry page shows a maintenance notice. This redesigned version remains a draft until publication is requested.
 
-Your mistake journal, training profile and practice index remain in this browser. They are not synced and are lost if site data is cleared. A language change preserves them. Download the game's PGN to keep its moves. Historical personal notes stay in the language in which they were written.
+## Licenses
 
-Every person uses their own provider API key. It stays in session memory, is sent directly to the selected provider and is never published or stored by this site. Changing providers requires the appropriate key. Board positions and notes are sent to the provider only when an AI feature is used.
-
-The estimated budget defaults to US$0.02 per game. Before requesting the API the app reserves a conservative amount, then records reported token use. Missing usage or a failed request is charged conservatively against the local estimate. Paid requests are never automatically retried. This browser limit is not a provider billing cap and does not limit other apps using the same key. Model availability, browser access, quotas and provider billing depend on your account. Use the official catalog links in settings for current details.
-
-## Engine and licenses
-
-Stockfish 19 lite single-threaded runs in a Web Worker. A normal opponent turn uses about 1,100 ms for the position before your move and 950 ms for the resulting position and candidates. Puzzle searches use about 1,800 ms per position; hint analysis is reused for the next attempt. The app needs a modern browser with WebAssembly, Web Workers and HTTPS access to your selected API.
-
-Application code: GPL-3.0. [Stockfish.js 19.0.1](https://github.com/nmrugg/stockfish.js/tree/v19.0.1): GPL-3.0, unchanged engine compilation from the npm package; corresponding source is linked at that version. See `vendor/STOCKFISH-LICENSE`. [chess.js 1.4.0](https://github.com/jhlywa/chess.js/tree/v1.4.0): BSD-2-Clause; see `vendor/CHESS-LICENSE`.
-
-The pieces use Colin M. L. Burnett's Cburnett design. The bishop logo adapts its colors. Distributed here under GPL-3.0; see [piece credits](pieces/CREDITOS.md).
-
-Provider contracts are tested with simulated responses and do not prove live account access. Pedagogical quality and the adaptive rules still need validation over many real games.
+Application: GPL-3.0. [Stockfish.js 19.0.1](https://github.com/nmrugg/stockfish.js/tree/v19.0.1): GPL-3.0, unchanged engine compilation from the npm package; corresponding source is linked at that version. See `vendor/STOCKFISH-LICENSE`. [chess.js 1.4.0](https://github.com/jhlywa/chess.js/tree/v1.4.0): BSD-2-Clause; see `vendor/CHESS-LICENSE`. Pieces and recolored bishop logo use Colin M. L. Burnett's Cburnett design, distributed here under GPL-3.0; see [piece credits](pieces/CREDITOS.md).
