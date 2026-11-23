@@ -1,6 +1,6 @@
 import {Chess} from './vendor/chess.js';
-import {classify,variation,puzzleLength} from './core.js';
-import {localReview,exerciseFeedback,replyFacts} from './learning.js';
+import {classify,variation,puzzleLength} from './core.js?v=move-replay';
+import {localReview,exerciseFeedback,replyFacts} from './learning.js?v=move-replay';
 import {patternForMove} from './training.js';
 export const THEMES={king:{en:'King safety',es:'Seguridad del rey'},pieces:{en:'Exposed material',es:'Material expuesto'},captures:{en:'Missed captures',es:'Capturas omitidas'},calculation:{en:'Calculate the reply',es:'Calcular la respuesta'},mate:{en:'Mating opportunities',es:'Oportunidades de mate'},fork:{en:'Double attacks',es:'Ataques dobles'},development:{en:'Opening decisions',es:'Decisiones de apertura'},forcing:{en:'Forcing moves',es:'Jugadas forzantes'}};
 export const HABITS={
@@ -91,11 +91,11 @@ export class PuzzleRunner{
   if(!Number.isFinite(before.cp)||!Number.isFinite(after.cp)||!before.best)throw new Error('Could not validate this move. / No se pudo validar la jugada.');
   const grade=classify(before,after,uci,before.best),good=grade.loss<50;let reply=null;
   if(good&&this.step+1<this.puzzle.targetSteps&&!c.isGameOver()){const played=moveUci(c,after.best||after.pv?.[0]);reply={from:played.from,to:played.to,san:played.san,color:played.color};}
-  const feedbackTexts=Object.fromEntries(['en','es'].map(language=>[language,exerciseFeedback({san:m.san,good,loss:grade.loss,afterFen,after,original:this.step===0?this.puzzle.original:null,language})]));
+  const feedbackTexts=Object.fromEntries(['en','es'].map(language=>[language,exerciseFeedback({san:m.san,good,move:m,afterFen,after,original:this.step===0?this.puzzle.original:null,language})]));
   if(good&&new Chess(afterFen).isCheckmate()){feedbackTexts.en+='\n\nCheckmate: the king is in check and your opponent has no legal move.';feedbackTexts.es+='\n\nEs jaque mate: el rey está en jaque y tu rival no tiene ninguna jugada legal.';}
   if(!good&&before.cp>90000&&after.cp>=-90000){feedbackTexts.en+='\n\nThere was a forced mating sequence for you here. This attempt missed it. Look for forcing checks.';feedbackTexts.es+='\n\nAquí tenías una secuencia de mate forzado. Este intento la dejó pasar. Busca jaques forzantes.';}
   const attempt={id:crypto.randomUUID(),runId:this.id,at:new Date(this.now()).toISOString(),step:this.step+1,uci,san:m.san,fen:fromFen,good,hinted:this.assisted,loss:grade.loss,feedbackTexts};this.attempts.push(attempt);
   if(good){this.step++;this.fen=c.fen();this.done=this.step>=this.puzzle.targetSteps||c.isGameOver();this.hintSquare=null;this.cache=null;}else this.failed=true;
-  this.answer={...attempt,from:m.from,to:m.to,color:m.color,afterFen,reply,done:this.done};return this.answer;
+  this.answer={...attempt,from:m.from,to:m.to,color:m.color,afterFen,counterplay:after.pv?.length?after.pv:[after.best].filter(Boolean),reply,done:this.done};return this.answer;
  }
 }
